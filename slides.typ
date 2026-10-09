@@ -10,9 +10,16 @@
 // ---------------------------------------------------------------------------
 
 #let R = $bb(R)$
-#let E = $bb(E)$
 #let diid = $limits(tilde)^"iid"$
-#let hl(body) = text(fill: red, body)
+// Color convention (all colors come from theme.typ):
+//  - dark-teal : default text and structure (graph edges, boxes)
+//  - bright (orange) : emphasis / "the thing to look at": treated nodes, problem terms,
+//                      and the standard (observed-network, known-A) model
+//  - red : our proposal: the latent / estimated-network (smoothed) model
+//  - muted (gray) : untreated / background
+#let hl(body) = text(fill: bright, body)
+#let pc(body) = hl(body) // peer contagion: standard model using the observed network
+#let lc(body) = text(fill: red, body) // latent contagion: our proposed model
 #let under(body) = underline(offset: 0.15em, body)
 
 // Annotation under/over an underbrace: small, centered, multi-line
@@ -125,7 +132,7 @@
 #slide[
   = Roadmap for today
 
-  + What are peer effect?
+  + What are peer effects?
 
   + How do we typically estimate peer effects?
 
@@ -148,12 +155,12 @@
   #toolbox.side-by-side(columns: (0.35fr, 0.65fr), gutter: 1em)[
     #align(center, net(
       (
-        (0, 1, red, none, (0, 0)),
+        (0, 1, bright, none, (0, 0)),
         (1, -1, muted, bacteria, (-0.4, -0.3)),
-        (1.5, 2.5, red, none, (0, 0)),
-        (2.75, 0.5, red, none, (0, 0)),
+        (1.5, 2.5, bright, none, (0, 0)),
+        (2.75, 0.5, bright, none, (0, 0)),
         (4.3, 2.4, muted, bacteria, (0.4, 0.3)),
-        (3.4, -1.4, red, bacteria, (0, -0.5)),
+        (3.4, -1.4, bright, bacteria, (0, -0.5)),
         (4.7, 0.1, muted, bacteria, (0.5, 0)),
       ),
       ((0, 1), (0, 2), (1, 2), (1, 3), (3, 5), (2, 3), (3, 4), (1, 5), (5, 6), (6, 4), (4, 2)),
@@ -217,13 +224,13 @@
 ]
 
 #slide[
-  = The canonical two-stage least stages linear-in-means estimator
+  = The canonical two-stage least squares linear-in-means estimator
   $
-    beta^* = (Z^top M Z)^(-1) Z^top M Y
+    hat(bold(beta))_"TSLS" = (Q^top M Q)^(-1) Q^top M Y
   $
   where
   $
-    Z = [1 space W space G W space G Y] quad quad quad quad G = D^(-1) A
+    Q = [bold(1)_n space W space G W space G Y] quad quad quad quad G = D^(-1) A
   $
   is the covariate matrix and
   $
@@ -274,7 +281,6 @@
   = Base rates and interference are collinear in large samples
 
   #align(center)[
-    #let rd(x) = hl(x)
     #set text(size: 0.85em)
     $
       vec(Y_1, Y_2, dots.v, Y_n) =
@@ -282,14 +288,14 @@
         mat(
           delim: "[",
           bold(1)_n, G Y, T, G T;
-          rd(1), G Y_1, 1, rd(1 \/ 2);
-          rd(1), G Y_2, 0, rd(1 \/ 2);
+          hl(1), G Y_1, 1, hl(1 \/ 2);
+          hl(1), G Y_2, 0, hl(1 \/ 2);
           dots.v, dots.v, dots.v, dots.v;
-          rd(1), G Y_n, 1, rd(1 \/ 2)
+          hl(1), G Y_n, 1, hl(1 \/ 2)
         ),
         #lbl[as $n -> oo$]
       )
-      vec(rd(alpha), beta, gamma, rd(delta)) + vec(epsilon.alt_1, epsilon.alt_2, dots.v, epsilon.alt_n)
+      vec(hl(alpha), beta, gamma, hl(delta)) + vec(epsilon.alt_1, epsilon.alt_2, dots.v, epsilon.alt_n)
     $
 
     #under[Sometimes can't distinguish between base rate #hl($alpha$) and interference #hl($delta$)]
@@ -333,10 +339,10 @@
 
     #v(0.5em)
     Block indicators $Z_i$ \
-    Popularity parameters $theta_i$ \
-    Mixing matrix $B in [0, 1]^(d times d)$
+    Popularity parameters $omega_i$ \
+    Mixing matrix $B in [0, 1]^(r times r)$
 
-    $ P(A_(i j) = 1 | Z, theta) = theta_i Z_i B Z_j^top theta_j $
+    $ bb(P)(A_(i j) = 1 | Z, omega) = omega_i Z_i B Z_j^top omega_j $
   ]
 ]
 
@@ -357,7 +363,7 @@
   #toolbox.side-by-side(columns: (1fr, 1fr, 1fr), gutter: 1em)[
     #figure(image("figures/matrices/A.png", width: 100%), caption: $A$, numbering: none)
   ][
-    #figure(image("figures/matrices/P.png", width: 100%), caption: $E[A | X] = X X^top$, numbering: none)
+    #figure(image("figures/matrices/P.png", width: 100%), caption: $bb(E)[A | X] = X X^top$, numbering: none)
   ][
     #figure(image("figures/matrices/Phat.png", width: 100%), caption: $hat(X) hat(X)^top$, numbering: none)
   ]
@@ -372,19 +378,17 @@
 
 #new-section[Estimating peer effects from noisy data]
 
-// Notation from the CAS poster: orange = peer contagion, red = latent contagion
-#let pc(body) = text(bright, body)
-#let lc(body) = text(red, body)
+// Notation from the CAS poster (orange = peer contagion, red = latent contagion)
 #let betanaught = pc($beta_0$)
 #let betaw = pc($beta_"w"$)
 #let betax = pc($beta_"x"$)
 #let betay = pc($beta_"y"$)
-#let bbeta = pc($beta$)
+#let bbeta = pc($bold(beta)$)
 #let thetanaught = lc($theta_0$)
 #let thetaw = lc($theta_"w"$)
 #let thetax = lc($theta_"x"$)
 #let thetay = lc($theta_"y"$)
-#let btheta = lc($theta$)
+#let btheta = lc($bold(theta)$)
 #let thetahattsls = lc($hat(theta)_"TSLS"$)
 
 #slide[
@@ -423,13 +427,13 @@
     *Intuition*: stochastic blockmodels
 
     Block indicators $Z_i$ \
-    Popularity parameters $gamma_i$ \
-    Mixing matrix $B in [0, 1]^(d times d)$
+    Popularity parameters $omega_i$ \
+    Mixing matrix $B in [0, 1]^(r times r)$
 
-    $ bb(P)(A_(i j) = 1 | Z, gamma, B) = underbrace(gamma_i Z_i B Z_j^top gamma_j, "rank" d) $
+    $ bb(P)(A_(i j) = 1 | Z, omega, B) = underbrace(omega_i Z_i B Z_j^top omega_j, "rank" r) $
   ]
 
-  #text(size: 0.7em)[Only assume undirected $A in R^(n times n)$ with low rank $P = E[A | X] = X X^top$ and sub-gamma (Bernoulli, Poisson, Gaussian, Gamma, ...) deviations around $A$.]
+  #text(size: 0.7em)[Only assume undirected $A in R^(n times n)$ with low rank $P = bb(E)[A | X] = X X^top$ and sub-gamma (Bernoulli, Poisson, Gaussian, Gamma, ...) deviations around $A$.]
 ]
 
 #slide[
@@ -445,8 +449,8 @@
   = ...to estimate how much people influence each other
 
   #text(size: 0.65em)[
-    Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $d$ SVD of $A$. Put $hat(X) = hat(U) hat(S)^(1\/2)$ and $hat(P) = hat(X) hat(X)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n).$ Let $hat(Z) = [W space hat(X) space hat(G) y]$ and $hat(H) = [W space hat(X) space hat(G) W space hat(G) hat(X) space hat(G)^2 W space hat(G)^2 hat(X)]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
-    $ thetahattsls = (hat(Z)^top hat(M) hat(Z))^(-1) hat(Z)^top hat(M) y $
+    Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$. Put $hat(X) = hat(U) hat(S)^(1\/2)$ and $hat(P) = hat(X) hat(X)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n).$ Let $hat(Q) = [W space hat(X) space hat(G) Y]$ and $hat(H) = [W space hat(X) space hat(G) W space hat(G) hat(X) space hat(G)^2 W space hat(G)^2 hat(X)]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
+    $ thetahattsls = (hat(Q)^top hat(M) hat(Q))^(-1) hat(Q)^top hat(M) Y $
 
     *Theorem:* $thetahattsls$ is asymptotically normal under the #lc[latent contagion] model
     $ sqrt(n) (thetahattsls - btheta) -> cal(N)(0, Sigma) $
@@ -572,13 +576,13 @@
 
   + All diagonal elements of $G$ are zero
 
-  + $(I - beta_(g y) G)^(-1)$ is non-singular with $lr(|beta_(g y)|) < 1$.
+  + $(I - beta G)^(-1)$ is non-singular with $lr(|beta|) < 1$.
 
-  + $G$ and $I - beta_(g y) G$ are uniformly bounded in row and column sums.
+  + $G$ and $I - beta G$ are uniformly bounded in row and column sums.
 
   + The regressor matrices $W$ have full column rank (for $n$ large enough), and the elements of $W$ are uniformly bounded in absolute value.
 
-  + $epsilon$ are i.i.d. with zero mean and bounded variance $bb(E)[epsilon_i^2] = sigma_epsilon^2 < b < infinity$. Additionally $epsilon_i$ have finite fourth order moments.
+  + $epsilon.alt_i$ are i.i.d. with zero mean and bounded variance $bb(E)[epsilon.alt_i^2] = sigma_(epsilon.alt)^2 < b < infinity$. Additionally $epsilon.alt_i$ have finite fourth order moments.
 ]
 
 
@@ -591,7 +595,7 @@
   $
   is finite and non-singular and
   $
-    1/n H^top Z
+    1/n H^top Q
   $
   converges in probability to a matrix that is finite and has full column rank.
 ]
@@ -601,11 +605,11 @@
 
   If all the previous assumptions hold, then
   $
-    sqrt(n) (beta^* - beta) -> cal(N)(0, sigma_epsilon^2 (Z^top M Z)^(-1))
+    sqrt(n) (hat(bold(beta))_"TSLS" - bold(beta)) -> cal(N)(0, sigma_(epsilon.alt)^2 (Q^top M Q)^(-1))
   $
   recalling that
   $
-    Z = [1 space W space G W space G Y] quad quad quad quad G = D^(-1) A
+    Q = [bold(1)_n space W space G W space G Y] quad quad quad quad G = D^(-1) A
   $
   is the covariate matrix and
   $
@@ -626,7 +630,7 @@
 
   #text(size: 0.65em)[
   #thmbox("Definition", name: cite(<young2007>, form: "prose"))[
-    Let $F$ be a distribution on $R^d$ such that $0 <= x^top y$ for all $x, y in "supp" F$ and the convex cone of $"supp" F$ is $d$-dimensional. Draw $X_1, X_2, dots, X_n diid F$, and collect these in the rows of $X in R^(n times d)$ for ease of notation. Conditional on these $n$ vectors, which we call _latent positions_, generate edges by drawing $\{A_(i j) : 1 <= i < j <= n\}$ as independent $(nu, b)$-subgamma random variables with $E[A_(i j) | X] = rho X_i^top X_j$, where $rho in [0, 1]$. Then we say that $A$ is distributed according to an $n$-vertex random dot product graph with latent position distribution $F$, $(nu, b)$-subgamma edges and sparsity factor $rho$. We write $(A, X) tilde "RDPG"(F, n)$.
+    Let $F$ be a distribution on $R^r$ such that $0 <= x^top y$ for all $x, y in "supp" F$ and the convex cone of $"supp" F$ is $r$-dimensional. Draw $X_1, X_2, dots, X_n diid F$, and collect these in the rows of $X in R^(n times r)$ for ease of notation. Conditional on these $n$ vectors, which we call _latent positions_, generate edges by drawing $\{A_(i j) : 1 <= i < j <= n\}$ as independent $(nu, b)$-subgamma random variables with $bb(E)[A_(i j) | X] = rho X_i^top X_j$, where $rho in [0, 1]$. Then we say that $A$ is distributed according to an $n$-vertex random dot product graph with latent position distribution $F$, $(nu, b)$-subgamma edges and sparsity factor $rho$. We write $(A, X) tilde "RDPG"(F, n)$.
   ]
   ]
 ]
