@@ -81,7 +81,7 @@
 })
 
 #let meditation = box(image("figures/icons/meditation.svg", height: 1.3em), baseline: 0.3em)
-#let anxiety = box(image("figures/icons/anxiety.svg", height: 1.1em), baseline: 0.2em)
+#let anxiety = "😰" // box(image("figures/icons/anxiety.svg", height: 1.1em), baseline: 0.2em)
 
 // Small network drawings.
 // nodes: (x, y, fill, label, label-offset); edges: pairs of node indices;
@@ -216,7 +216,7 @@
     #uncover("2-")[
       #text(
         size: 0.6em,
-      )[\* Can be defined counterfactually @vazquez-bare2023, but we do not consider counterfactual inference in this talk.]
+      )[\* Can be defined counterfactually, but we do not consider counterfactual inference in this talk.]
     ]
   ]
 ]
@@ -282,10 +282,10 @@
 #slide[
   = Hold on! Does this model even make sense?
 
-  #text(size: 0.65em)[
+  #text(size: 0.75em)[
     #set math.equation(numbering: none)
     #set block(spacing: 0.6em)
-    Why does every $Y_i$ depend on every other $Y_j$? Write the model in matrix form, with $G = D^(-1) A$:
+    Write the model in matrix form, with $G = D^(-1) A$, such that $G_(i j) = A_(i j) \/ d_i$:
 
     #v(1em)
 
@@ -306,7 +306,7 @@
     #only("4-", dgp(4))
 
     #uncover("4-")[
-      #text(size: 0.8em)[\* Must have $|betay| < 1$, so the effect of averaging decays with repetition]
+      #text(size: 0.8em)[\* Must have $abs(betay) < 1$, so the effect of averaging decays with repetition]
     ]
 
     #v(1em)
@@ -331,18 +331,20 @@
 
 
 #slide[
-  = Okay but does the latent contagion model mean anything?
+  = We propose a model based on probability of friendship instead
 
-  #text(size: 0.6em)[
+  #text(size: 0.75em)[
     $
-      Y_i & = betanaught + W_i betaw + X_i betax + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i & "requires all" A_(i j) \
-      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(X_i thetax, "latent\npositional\neffect") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, "latent contagion") + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
+      Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i & "requires all" A_(i j) \
+      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, "latent contagion") + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
     $
     where $d_i = sum_j A_(i j)$ and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$.
 
-    Let's forget about network noise for a second and ask two big questions:
-    + How should we estimate the probability of friendship $lc(bb(P)(A_(i j) = 1))$ between nodes $i$ and $j$?
-    + Do the coefficients $thetanaught, thetaw, thetax$ and especially $thetay$ from the #lc([latent contagion]) model actually mean anything?
+    #uncover("2-")[
+      Two big questions:
+      + How to get friendship probabilities $lc(bb(P)(A_(i j) = 1))$?
+      + Do the coefficients $thetanaught, thetaw$ and especially $thetay$ from the #lc([latent contagion]) model mean anything?
+    ]
   ]
 ]
 
@@ -350,7 +352,9 @@
   = We estimate friendships based on a low-rank network model
 
   #toolbox.side-by-side(gutter: 1em)[
-    #image("figures/blockmodel-poster.png", height: 60%)
+    #align(center + horizon)[
+      #image("figures/blockmodel-poster.png", height: 60%)
+    ]
   ][
     *Intuition*: stochastic blockmodels
 
@@ -363,7 +367,7 @@
 
   #text(
     size: 0.7em,
-  )[Only assume undirected $A in R^(n times n)$ with low rank $P = bb(E)[A | X] = X X^top$ and sub-gamma (Bernoulli, Poisson, Gaussian, Gamma, ...) deviations around $A$.]
+  )[Only assume undirected non-negative $A in R^(n times n)$ with low rank $P = bb(E)[A | U, S] = U S U^top$ and sub-gamma (Bernoulli, Poisson, Gaussian, Gamma, ...) deviations around $A$.]
 ]
 
 
@@ -371,27 +375,30 @@
   = We estimate friendships based on a low-rank network model
 
   #toolbox.side-by-side(gutter: 1em)[
-    #image("figures/blockmodel-poster.png", height: 60%)
+    #align(center + horizon)[
+      #image("figures/blockmodel-poster.png", height: 60%)
+    ]
   ][
-    TODO: estimating $X$ via principal components analysis
 
-    Well-known theory: this works
+    Let $hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$.
+
+    Then $[hat(U) hat(S) hat(U)^top]_(i j) arrow bb(P)(A_(i j) = 1)$
+
+    "Adjacency Spectral Embedding"
+
+    Principal components of nework!
   ]
 ]
 
 #slide[
   = Okay but does the latent contagion model mean anything?
 
-  #text(size: 0.6em)[
+  #text(size: 0.9em)[
     $
-      Y_i & = betanaught + W_i betaw + X_i betax + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i & "requires all" A_(i j) \
-      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(X_i thetax, "latent\npositional\neffect") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, "latent contagion") + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
+      Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i & "requires all" A_(i j) \
+      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, "latent contagion") + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
     $
     where $d_i = sum_j A_(i j)$ and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$.
-
-    Let's forget about network noise for a second and ask two big questions:
-    + How should we estimate the probability of friendship $lc(bb(P)(A_(i j) = 1))$ between nodes $i$ and $j$?
-    + Do the coefficients $thetanaught, thetaw, thetax$ and especially $thetay$ from the #lc([latent contagion]) model actually mean anything?
   ]
 ]
 
@@ -399,14 +406,12 @@
 #slide[
   = First: we can estimate the latent contagion coefficients
 
-  #text(size: 0.65em)[
-    Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$. Put $hat(X) = hat(U) hat(S)^(1\/2)$ and $hat(P) = hat(X) hat(X)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n).$ Let $hat(Q) = [W space hat(X) space hat(G) Y]$ and $hat(H) = [W space hat(X) space hat(G) W space hat(G) hat(X) space hat(G)^2 W space hat(G)^2 hat(X)]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
-    $ thetahattsls = (hat(Q)^top hat(M) hat(Q))^(-1) hat(Q)^top hat(M) Y $
+  #text(size: 0.9em)[
+    Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$. Put $hat(P) = hat(U) hat(S) hat(U)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n).$ Let $hat(X) = [W space hat(G) Y]$ and $hat(H) = [W space hat(G) W space hat(G)^2 W]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
+    $ thetahattsls = (hat(X)^top hat(M) hat(X))^(-1) hat(X)^top hat(M) Y $
 
-    *Theorem:* $thetahattsls$ is asymptotically normal under the #lc[latent contagion] model
+    *Theorem:* In sufficiently dense low-rank networks, $thetahattsls$ is asymptotically normal under the #lc[latent contagion] model
     $ sqrt(n) (thetahattsls - btheta) -> cal(N)(0, Sigma) $
-
-    TODO 
   ]
 ]
 
@@ -416,40 +421,55 @@
   *Theorem:* $thetahattsls$ is asymptotically normal under the #pc[peer contagion] model
   $ sqrt(n) (thetahattsls - bbeta) -> cal(N)(0, Sigma) $
 
-  Latent contagion is a reasonable working model when  peer contagion is the true model, 
-
-  
+  Latent contagion is a reasonable working model when  peer contagion is the true model
 ]
 
 #slide[
-  = Why is latent contagion a good working model in RDPGs?
+  = Asymptotically, $bbeta$ and $btheta$ have the same interpretation
+
+  Let $tilde(d)_i = sum_j P_(i j)$ and $hat(D) = "diag"(tilde(d)_1, ..., tilde(d)_n)$ and $tilde(G) = tilde(D)^(-1) P in R^(n times n).$
+
+  Population design matrices:
+
+  $
+                  X = [W space G Y] quad quad quad quad quad quad quad & pc("peer contagion") \
+    tilde(X) = [W space tilde(G) Y] quad quad quad quad quad quad quad & lc("latent contagion")
+  $
+
+  *Theorem:* Under both peer and latent contagion models, in dense low-rank networks, the non-parametric projection functionals are very close
+
+  $
+    norm(EE[X^top X]^(-1) EE[X^top Y] - EE[tilde(X)^top tilde(X)]^(-1) EE[tilde(X)^top Y]) = o_p (1/sqrt(n))
+  $
+]
+
+#slide[
+  = Why are latent contagion and peer contagion models so close?
 
   #set figure(supplement: none)
   #set figure.caption(position: bottom)
   #toolbox.side-by-side(columns: (1fr, 1fr, 1fr), gutter: 1em)[
     #figure(image("figures/matrices/A.png", width: 100%), caption: $A$, numbering: none)
   ][
-    #figure(image("figures/matrices/P.png", width: 100%), caption: $bb(E)[A | X] = X X^top$, numbering: none)
+    #figure(image("figures/matrices/P.png", width: 100%), caption: $bb(E)[A] = P$, numbering: none)
   ][
-    #figure(image("figures/matrices/Phat.png", width: 100%), caption: $hat(X) hat(X)^top$, numbering: none)
+    #figure(image("figures/matrices/Phat.png", width: 100%), caption: $hat(P)$, numbering: none)
   ]
 ]
-
-// TODO: projection equivalence result
 
 #new-section[Estimating peer effects from noisy data]
 
 #slide[
   = The latent contagion estimator handles noisy network data
 
-  $thetahattsls$ only needs $Y, W$ and an estimate $hat(X)$ of $X$. if $hat(X)$ is a good estimate of $X$, we can estimate $lc(bb(P)(A_(i j) = 1))$ well and knowing $lc(bb(P)(A_(i j) = 1))$  is as good as knowing $A$
+  $thetahattsls$ only needs $Y, W$ and an estimate $hat(P)$ of $P$. Knowing $P_(i j) = lc(bb(P)(A_(i j) = 1))$  is as good as knowing $A$
 
-  We don't need to know $A$, we just need to be able to estimate the principal components of $A$
+  Since $P$ is low-rank, estimating $P$ just means estimating the principal components of $A$
 ]
 
 #slide[
   = Use progressively more exotic datasets to estimate $X$
-  
+
   TODO
 ]
 
@@ -523,8 +543,8 @@
     We propose one of the first methods to estimate peer effects that works with noisy friendship measurements
 
     // #align(center)[How generally can we apply the strategy of replacing $A$ with $bb(P)(A)$?]
-    
-    consulting obligation 
+
+    consulting obligation
 
     #v(1em)
     #set list(marker: none)
@@ -573,13 +593,13 @@
 #slide[
   = Assumptions of the canonical two-stage least squares estimator
 
-  Further, the instruments $H$ have full column rank and are composed of a subset of linearly independent columns of $mat(W, G W, G^2 W)$ where the subset contains $W$ and $X$. Additionally
+  Further, the instruments $H$ have full column rank and are composed of a subset of linearly independent columns of $mat(W, G W, G^2 W)$ where the subset contains $W$. Additionally
   $
     lim_(n -> oo) 1/n H^top H
   $
   is finite and non-singular and
   $
-    1/n H^top Q
+    1/n H^top X
   $
   converges in probability to a matrix that is finite and has full column rank.
 ]
@@ -589,11 +609,11 @@
 
   If all the previous assumptions hold, then
   $
-    sqrt(n) (hat(bold(beta))_"TSLS" - bold(beta)) -> cal(N)(0, sigma_(epsilon.alt)^2 (Q^top M Q)^(-1))
+    sqrt(n) (hat(bold(beta))_"TSLS" - bold(beta)) -> cal(N)(0, sigma_(epsilon.alt)^2 (X^top M X)^(-1))
   $
   recalling that
   $
-    Q = [1_n space W space G W space G Y] quad quad quad quad G = D^(-1) A
+    X = [1_n space W space G W space G Y] quad quad quad quad G = D^(-1) A
   $
   is the covariate matrix and
   $
@@ -611,14 +631,13 @@
 #slide[
   = Random dot product graphs
 
-  #text(size: 0.65em)[
-    #thmbox("Definition", name: cite(<young2007>, form: "prose"))[
+  #text(size: 0.95em)[
+    #thmbox("Definition")[
       Let $F$ be a distribution on $R^r$ such that $0 <= x^top y$ for all $x, y in "supp" F$ and the convex cone of $"supp" F$ is $r$-dimensional. Draw $X_1, X_2, dots, X_n diid F$, and collect these in the rows of $X in R^(n times r)$ for ease of notation. Conditional on these $n$ vectors, which we call _latent positions_, generate edges by drawing $\{A_(i j) : 1 <= i < j <= n\}$ as independent $(nu, b)$-subgamma random variables with $bb(E)[A_(i j) | X] = rho X_i^top X_j$, where $rho in [0, 1]$. Then we say that $A$ is distributed according to an $n$-vertex random dot product graph with latent position distribution $F$, $(nu, b)$-subgamma edges and sparsity factor $rho$. We write $(A, X) tilde "RDPG"(F, n)$.
     ]
   ]
 ]
 
 #slide[
-  #set text(size: 0.34em)
-  #columns(2, bibliography(("ard-trait-selection.bib", "2025-02-19-jobtalk.bib"), style: "apa", title: none))
+  // #bibliography("ard-trait-selection.bib", "2025-02-19-jobtalk.bib")
 ]
