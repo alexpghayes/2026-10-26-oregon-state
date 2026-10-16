@@ -141,27 +141,23 @@
   #divider
 
   #set text(size: .8em, weight: "light")
-  Alex Hayes
 
-  October 26, 2026
+  #let person(name, logo) = stack(
+    spacing: 1.1em,
+    text(size: 1.1em)[#name],
+    box(height: 3.2em, align(left + horizon, image(logo, width: 11em, height: 3.2em, fit: "contain"))),
+  )
 
-  #place(bottom + right, image("figures/oregon-state/OSU_horizontal_2C_O_over_B.png", width: 25%))
+  #v(0.8em)
+  #grid(
+    columns: (1fr, 1fr),
+    column-gutter: 2em,
+    person([Alex Hayes], "figures/oregon-state/OSU_horizontal_2C_O_over_B.png"),
+    person([Keith Levin], "figures/uw-madison/color-flush-UWlogo-print.png"),
+  )
+
+  #place(bottom + right, text(size: 0.8em)[October 26, 2026])
 ]
-
-
-#slide[
-  = This is joint work with my advisor
-
-  #toolbox.side-by-side(gutter: 3mm)[
-    #align(center)[
-      #image("figures/keith.jpg", height: 50%)
-
-      Keith Levin \
-      #text(size: 0.8em)[University of Wisconsin-Madison]
-    ]
-  ]
-]
-
 
 #slide[
   = Roadmap for today
@@ -569,7 +565,16 @@
       )
     ]
   ][
-    #image("figures/sin-theta-last-slide.png")
+    #align(center, image("figures/sin-theta-last-slide.png", height: 8cm))
+
+    #v(0.2em)
+    #align(right, grid(
+      columns: (auto, auto),
+      column-gutter: 1em,
+      align: horizon + left,
+      box(clip: true, radius: 1em, image("figures/keith.jpg", width: 3.2em, height: 4em, fit: "cover")),
+      text(size: 0.7em)[Joint work with \ Keith Levin],
+    ))
   ]
 ]
 
