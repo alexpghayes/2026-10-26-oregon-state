@@ -22,6 +22,20 @@
 #let lc(body) = text(fill: red, body) // latent contagion: our proposed model
 #let under(body) = underline(offset: 0.15em, body)
 
+// Notation from the CAS poster (orange = peer contagion, red = latent contagion)
+#let betanaught = pc($beta_0$)
+#let betaw = pc($beta_"w"$)
+#let betax = pc($beta_"x"$)
+#let betay = pc($beta_"y"$)
+#let bbeta = pc($bold(beta)$)
+#let thetanaught = lc($theta_0$)
+#let thetaw = lc($theta_"w"$)
+#let thetax = lc($theta_"x"$)
+#let thetay = lc($theta_"y"$)
+#let btheta = lc($bold(theta)$)
+#let thetahattsls = lc($hat(theta)_"TSLS"$)
+
+
 // Annotation under/over an underbrace: small, centered, multi-line
 #let lbl(..lines) = text(size: 0.7em, lines.pos().join(linebreak()))
 
@@ -66,26 +80,45 @@
   )))
 })
 
-#let bacteria = box(image("figures/bacteria.png", height: 1em), baseline: 0.2em)
+#let meditation = box(image("figures/icons/meditation.svg", height: 1.3em), baseline: 0.3em)
+#let anxiety = box(image("figures/icons/anxiety.svg", height: 1.1em), baseline: 0.2em)
 
 // Small network drawings.
 // nodes: (x, y, fill, label, label-offset); edges: pairs of node indices;
+// dashed: edges (from edges) drawn dashed, with a "?", to show measurement uncertainty;
+// reveal: false draws them solid with an invisible "?" so the canvas keeps the same size;
 // loops: node indices that get a self-loop (loop-dir: +1 above, -1 below)
-#let net(nodes, edges, loops: (), loop-dir: (:), length: 1cm, r: 0.14) = canvas(length: length, {
-  import draw: *
-  for (a, b) in edges {
-    line((nodes.at(a).at(0), nodes.at(a).at(1)), (nodes.at(b).at(0), nodes.at(b).at(1)), stroke: 0.08em + dark-teal)
-  }
-  for i in loops {
-    let d = loop-dir.at(str(i), default: 1)
-    circle((nodes.at(i).at(0), nodes.at(i).at(1) + d * 0.3), radius: 0.2, stroke: 0.08em + dark-teal)
-  }
-  for n in nodes {
-    let (x, y, fill, label, off) = n
-    circle((x, y), radius: r, fill: fill, stroke: none)
-    if label != none { content((x + off.at(0), y + off.at(1)), label) }
-  }
-})
+#let net(nodes, edges, dashed: (), reveal: true, loops: (), loop-dir: (:), length: 1cm, r: 0.14) = canvas(
+  length: length,
+  {
+    import draw: *
+    for (a, b) in edges {
+      let (xa, ya) = (nodes.at(a).at(0), nodes.at(a).at(1))
+      let (xb, yb) = (nodes.at(b).at(0), nodes.at(b).at(1))
+      let unsure = (a, b) in dashed
+      let st = if unsure and reveal { (paint: dark-teal, thickness: 0.08em, dash: (4pt, 3pt)) } else {
+        0.08em + dark-teal
+      }
+      line((xa, ya), (xb, yb), stroke: st)
+      if unsure {
+        let len = calc.sqrt(calc.pow(xb - xa, 2) + calc.pow(yb - ya, 2))
+        content(
+          ((xa + xb) / 2 - (yb - ya) / len * 0.7, (ya + yb) / 2 + (xb - xa) / len * 0.7),
+          text(size: 1.1em, weight: "bold", fill: if reveal { dark-teal } else { rgb(0, 0, 0, 0) })[?],
+        )
+      }
+    }
+    for i in loops {
+      let d = loop-dir.at(str(i), default: 1)
+      circle((nodes.at(i).at(0), nodes.at(i).at(1) + d * 0.3), radius: 0.2, stroke: 0.08em + dark-teal)
+    }
+    for n in nodes {
+      let (x, y, fill, label, off) = n
+      circle((x, y), radius: r, fill: fill, stroke: none)
+      if label != none { content((x + off.at(0), y + off.at(1)), label) }
+    }
+  },
+)
 
 // Labelled design matrix: header row of column names above the matrix
 #let design(cols, rows, delim: "[") = {
@@ -110,8 +143,9 @@
   #set text(size: .8em, weight: "light")
   Alex Hayes
 
-  October 26, 2026  \
-  Oregon State University
+  October 26, 2026
+
+  #place(bottom + right, image("figures/oregon-state/OSU_horizontal_2C_O_over_B.png", width: 25%))
 ]
 
 
@@ -132,9 +166,7 @@
 #slide[
   = Roadmap for today
 
-  + What are peer effects?
-
-  + How do we typically estimate peer effects?
+  + What are peer effects and how do we estimate them?
 
   + Estimating peer effects from noisy data
 
@@ -147,279 +179,175 @@
 // Recent work on network regression
 // ---------------------------------------------------------------------------
 
-#new-section[What are peer effects and how do we estimate them?]
+#new-section[Peer effects]
 
 #slide[
-  = Peer effects are measures of social influence
+  = Humans constantly influence their social contacts
+
+  #align(center, image("figures/friendship-diagram.png", height: 85%))
+]
+
+#slide[
+  = These social influences are often called peer effects
 
   #toolbox.side-by-side(columns: (0.35fr, 0.65fr), gutter: 1em)[
     #align(center, net(
       (
-        (0, 1, bright, none, (0, 0)),
-        (1, -1, muted, bacteria, (-0.4, -0.3)),
-        (1.5, 2.5, bright, none, (0, 0)),
-        (2.75, 0.5, bright, none, (0, 0)),
-        (4.3, 2.4, muted, bacteria, (0.4, 0.3)),
-        (3.4, -1.4, bright, bacteria, (0, -0.5)),
-        (4.7, 0.1, muted, bacteria, (0.5, 0)),
+        (0, 1.25, bright, none, (0, 0)),
+        (1.25, -1.25, muted, anxiety, (-1.1, -0.85)),
+        (1.9, 3.1, bright, none, (0, 0)),
+        (3.45, 0.6, bright, none, (0, 0)),
+        (5.4, 3.0, muted, anxiety, (1.1, 0.85)),
+        (4.25, -1.75, bright, anxiety, (0, -1.3)),
+        (5.9, 0.1, muted, anxiety, (1.3, 0)),
       ),
       ((0, 1), (0, 2), (1, 2), (1, 3), (3, 5), (2, 3), (3, 4), (1, 5), (5, 6), (6, 4), (4, 2)),
       length: 0.8cm,
+      r: 0.4,
     ))
   ][
     #set par(spacing: 1.2em)
-    #only("1-")[*Direct effect*: if I get #hl[vaccinated], I am less likely to get sick #bacteria]
+    #only("1-")[*Direct effect*: if I #hl[meditate], I am less likely to be anxious for my final #anxiety]
 
-    #only("1-")[*Contagion*: if my friends get sick #bacteria, I am more likely to get sick #bacteria]
+    #only("1-")[*Contagion*: if my friends are anxious #anxiety, I am more likely to be anxious #anxiety]
 
-    #only("1-")[*Interference*: if my friends get #hl[vaccinated], I am less likely to get sick #bacteria]
+    #only("1-")[*Interference*: if my friends #hl[meditate], I am less likely to be anxious #anxiety]
 
     #uncover("2-")[
-      #text(size: 0.6em)[\* Can be defined counterfactually (#cite(<vazquez-bare2023>, form: "prose")), but we do not consider counterfactual inference in this talk.]
+      #text(
+        size: 0.6em,
+      )[\* Can be defined counterfactually @vazquez-bare2023, but we do not consider counterfactual inference in this talk.]
+    ]
+  ]
+]
+
+#slide[
+  = Measuring someone's friends is challenging
+
+  #let friends-net(reveal) = net(
+    (
+      (0, 1.25, bright, none, (0, 0)),
+      (1.25, -1.25, muted, anxiety, (-1.1, -0.85)),
+      (1.9, 3.1, bright, none, (0, 0)),
+      (3.45, 0.6, bright, none, (0, 0)),
+      (5.4, 3.0, muted, anxiety, (1.1, 0.85)),
+      (4.25, -1.75, bright, anxiety, (0, -1.3)),
+      (5.9, 0.1, muted, anxiety, (1.3, 0)),
+    ),
+    ((0, 1), (0, 2), (1, 2), (1, 3), (3, 5), (2, 3), (3, 4), (1, 5), (5, 6), (6, 4), (4, 2)),
+    dashed: ((0, 2), (1, 3), (3, 5), (6, 4)),
+    reveal: reveal,
+    length: 0.8cm,
+    r: 0.4,
+  )
+
+  #toolbox.side-by-side(columns: (0.35fr, 0.65fr), gutter: 1em)[
+    // Both versions share one canvas size, stacked in the same spot
+    #align(center, box({
+      uncover("1-4", friends-net(false))
+      place(top + left, uncover("5", friends-net(true)))
+    }))
+  ][
+    #set par(spacing: 1.2em)
+    #text(size: 0.8em)[
+      #uncover("1-")[If I ask you who your friends are:]
+
+      #{
+        // Bullets live inside uncover so the markers appear together with their text
+        let item(n, body) = uncover(str(n) + "-", grid(
+          columns: (1.4em, 1fr),
+          align: top + left,
+          [•], body,
+        ))
+        set par(spacing: 0.9em)
+        item(2)[answers vary depending on how exactly I ask you,]
+        item(3)[you'll probably forget day-to-day social contacts, and]
+        item(4)[you might think someone is your friend, but they might disagree.]
+      }
     ]
   ]
 ]
 
 
 #slide[
-  = Linear-in-means models estimate social influence
+  = Peer effects estimates need perfectly observed networks
+
+  $
+    Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i
+  $
+
+  But we know networks are measurement with noisy and imperfectly
+]
+
+#slide[
+  = Hold on! Does this model even make sense?
 
   #text(size: 0.65em)[
-  #let cell(n, body) = uncover(str(n) + "-", body)
-  #grid(
-    columns: (auto, auto, auto, auto, 3em, auto, auto, auto),
-    column-gutter: 0.5em,
-    row-gutter: 0.7em,
-    align: left,
-    cell(1)[Outcome], cell(1)[(sick?)], cell(1)[$Y_i$], cell(1)[$in {0, 1}$], [],
-    cell(1)[Base rate], cell(1)[$alpha$], cell(1)[$in R$],
-
-    cell(2)[Node degree], cell(2)[(num friends)], cell(2)[$d_i$], cell(2)[$in {0, 1, 2, dots}$], [],
-    cell(2)[Contagion], cell(2)[$beta$], cell(2)[$in (-1, 1)$],
-
-    cell(2)[Edge $i tilde j$], cell(2)[(friends?)], cell(2)[$A_(i j)$], cell(2)[$in {0, 1}$], [],
-    cell(3)[Direct effect], cell(3)[$gamma$], cell(3)[$in R$],
-
-    cell(3)[Treatment], cell(3)[(vaccinated?)], cell(3)[$T_i$], cell(3)[$in {0, 1}$], [],
-    cell(4)[Interference], cell(4)[$delta$], cell(4)[$in R$],
-  )
-
-  #v(0.3em)
-  #set text(size: 1.5em)
-  #align(center)[
-    #let term(s, body) = uncover(str(s) + "-", math.equation(block: false, math.display(body)))
-    #term(1, $underbrace(Y_i, #lbl[sick?]) = alpha$)
-    #term(2, $+ beta underbrace(1 / d_i sum_(j : A_(i j) = 1) Y_j, #lbl[fraction sick friends])$)
-    #term(3, $+ gamma underbrace(T_i, #lbl[vaccinated?])$)
-    #term(4, $+ delta underbrace(1 / d_i sum_(j : A_(i j) = 1) T_j, #lbl[fraction vaccinated friends])$)
-    #term(5, $+ underbrace(epsilon.alt_i, #lbl[error])$)
-  ]
-
-  #uncover("6-")[
-    #set text(size: 0.5em)
-    Letting $G = D^(-1) A$ be the row-normalized adjacency matrix, we can write this in matrix-vector form:
-    #align(center, text(size: 2em, $Y = alpha bold(1)_n + beta G Y + T gamma + G T delta + epsilon.alt$))
-  ]
-  ]
-]
-
-#slide[
-  = The canonical two-stage least squares linear-in-means estimator
-  $
-    hat(bold(beta))_"TSLS" = (Q^top M Q)^(-1) Q^top M Y
-  $
-  where
-  $
-    Q = [bold(1)_n space W space G W space G Y] quad quad quad quad G = D^(-1) A
-  $
-  is the covariate matrix and
-  $
-    M = H (H^top H)^(-1) H^top
-  $
-  is the projection onto the span of the instrument matrix
-  $
-    H = [W space G W space G^2 W space G^3 W].
-  $
-]
-
-#new-section([The problem])
-
-
-#slide[
-  = This talk is about the #under[linear-in-means] model
-
-  #hl[Very popular] tool for estimating social influence
-
-  Used in education, crime, health, social policy, etc.
-
-  I discovered an issue with this model
-
-  #note[E.g., @sacerdote2001, @epple2011, @soetevent2007, @trogdon2008, @duflo2003, @bertrand2000, @glaeser1996, @patacchini2012a, @carrell2013, etc.]
-]
-
-
-#slide[
-  = Peer effects in networks with missing and noisy edges
-
-  #align(center, image("figures/missing-edges.pdf", height: 100%))
-]
-
-#slide[
-  = A new estimator for the linear-in-means model
-
-  *Setting*: Treatment random and independent of network. $T_i diid "Bern"(0.5)$
-
-  #align(center, text(size: 1.4em, $Y = alpha bold(1)_n + beta G Y + T gamma + G T delta + epsilon.alt$))
-
-  We started to run a simulation study to confirm that our estimator worked...
-
-  #note[Generate $Y$ via the reduced-form specification $Y = (I - beta G)^(-1) (alpha bold(1)_n + gamma T + delta G T + epsilon.alt)$.]
-]
-
-
-#slide[
-  = Base rates and interference are collinear in large samples
-
-  #align(center)[
-    #set text(size: 0.85em)
-    $
-      vec(Y_1, Y_2, dots.v, Y_n) =
-      underbrace(
-        mat(
-          delim: "[",
-          bold(1)_n, G Y, T, G T;
-          hl(1), G Y_1, 1, hl(1 \/ 2);
-          hl(1), G Y_2, 0, hl(1 \/ 2);
-          dots.v, dots.v, dots.v, dots.v;
-          hl(1), G Y_n, 1, hl(1 \/ 2)
-        ),
-        #lbl[as $n -> oo$]
-      )
-      vec(hl(alpha), beta, gamma, hl(delta)) + vec(epsilon.alt_1, epsilon.alt_2, dots.v, epsilon.alt_n)
-    $
-
-    #under[Sometimes can't distinguish between base rate #hl($alpha$) and interference #hl($delta$)]
-  ]
-]
-
-#slide[
-  = In simulations, we couldn't estimate #hl($beta$) either
-
-  #align(center, image("figures/simulations/jobtalk-mse.pdf", width: 85%))
-]
-
-#slide[
-  = Causal folks study treatments that depend on network position
-
-  #align(center, pdf-crop("papers/shalizi.pdf", page: 2, trim: (1.5cm, 16cm, 0cm, 3.3cm), width: 80%))
-]
-
-#slide[
-  = Dependence between treatment and network might help
-
-  #align(center)[
-    #set text(size: 1.4em)
-    $
-      underbrace([G T]_i, #lbl[fraction vaccinated friends])
-      = underbrace(1 / d_i sum_(j : A_(i j) = 1) T_j, #lbl[average of dependent treatments])
-    $
+    #set math.equation(numbering: none)
+    #set block(spacing: 0.6em)
+    Why does every $Y_i$ depend on every other $Y_j$? Write the model in matrix form, with $G = D^(-1) A$:
 
     #v(1em)
-    $G T$ might not converge, or might converge to a non-constant value
+
+    // One aligned equation per subslide; unrevealed rows are hidden so nothing moves
+    #let dgp(n) = {
+      let vis(k, body) = if n >= k { body } else { hide(body) }
+      let rest = $betanaught 1_n + W betaw + epsilon.alt$
+      $
+        #vis(1, $Y$) & #vis(1, $= betanaught 1_n + W betaw + betay G Y + epsilon.alt$) \
+        #vis(2, $Y - betay G Y$) & #vis(2, $= rest$) \
+        #vis(3, $Y$) & #vis(3, $= (I - betay G)^(-1) (rest)$) \
+        #vis(4, $$) & #vis(4, $stretch(=)^(*) underbrace(sum_(k=0)^infinity pc(beta_"y"^k) G^k, "repeated\nneighborhood\naveraging") (rest)$)
+      $
+    }
+    #only("1", dgp(1))
+    #only("2", dgp(2))
+    #only("3", dgp(3))
+    #only("4-", dgp(4))
+
+    #uncover("4-")[
+      #text(size: 0.8em)[\* Must have $|betay| < 1$, so the effect of averaging decays with repetition]
+    ]
+
+    #v(1em)
+    #uncover("5-")[
+      #text(
+        size: 0.8em,
+      )[Because $Y_i$ and $Y_j$ are dependent, cannot use ordinary least squares #sym.arrow typically use two-stage least squares/instrumental variables instead]
+    ]
   ]
 ]
 
-#slide[
-  = Stochastic blockmodels induce dependence
-
-  #toolbox.side-by-side(columns: (0.45fr, 0.55fr), gutter: 1em)[
-    #image("figures/assortative.png", width: 100%)
-  ][
-    Stochastic blockmodels are an intuitive way to induce dependence
-
-    #v(0.5em)
-    Block indicators $Z_i$ \
-    Popularity parameters $omega_i$ \
-    Mixing matrix $B in [0, 1]^(r times r)$
-
-    $ bb(P)(A_(i j) = 1 | Z, omega) = omega_i Z_i B Z_j^top omega_j $
-  ]
-]
 
 #slide[
-  = More takeaways
+  = Peer effects estimates need perfectly observed networks
 
-  #takeaway("Takeaway 3")[Explicitly modelling dependence between nodal covariates and network structure can aid identifiability and resolve asymptotic collinearity issues.]
+  $
+    Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i
+  $
 
-  #v(0.5em)
-  #takeaway("Takeaway 4")[Treatments dependent on network must be considered on a case-by-case basis, considering both the treatment and the network model.]
-]
-
-#slide[
-  = Peer effects in networks with missing and noisy edges
-
-  #set figure(supplement: none)
-  #set figure.caption(position: bottom)
-  #toolbox.side-by-side(columns: (1fr, 1fr, 1fr), gutter: 1em)[
-    #figure(image("figures/matrices/A.png", width: 100%), caption: $A$, numbering: none)
-  ][
-    #figure(image("figures/matrices/P.png", width: 100%), caption: $bb(E)[A | X] = X X^top$, numbering: none)
-  ][
-    #figure(image("figures/matrices/Phat.png", width: 100%), caption: $hat(X) hat(X)^top$, numbering: none)
-  ]
-]
-
-#slide[
-  = Causal inference for co-evolution models
-
-  #align(center, image("figures/time-varying.png", height: 100%))
+  But we know networks are measurement with noisy and imperfectly
 ]
 
 
-#new-section[Estimating peer effects from noisy data]
-
-// Notation from the CAS poster (orange = peer contagion, red = latent contagion)
-#let betanaught = pc($beta_0$)
-#let betaw = pc($beta_"w"$)
-#let betax = pc($beta_"x"$)
-#let betay = pc($beta_"y"$)
-#let bbeta = pc($bold(beta)$)
-#let thetanaught = lc($theta_0$)
-#let thetaw = lc($theta_"w"$)
-#let thetax = lc($theta_"x"$)
-#let thetay = lc($theta_"y"$)
-#let btheta = lc($bold(theta)$)
-#let thetahattsls = lc($hat(theta)_"TSLS"$)
-
 #slide[
-  = Humans constantly influence their social contacts
-
-  #align(center, image("figures/friendship-diagram.jpeg", height: 85%))
-]
-
-#slide[
-  = ...but measuring someone's friends is challenging
-
-  If I ask you who your friends are:
-
-  - answers vary depending on how exactly I ask you,
-  - you'll probably forget day-to-day social contacts, and
-  - you might think someone is your friend, but they might disagree.
-]
-
-#slide[
-  = We use estimated *likelihood of friendship* instead
+  = Okay but does the latent contagion model mean anything?
 
   #text(size: 0.6em)[
     $
       Y_i & = betanaught + W_i betaw + X_i betax + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i & "requires all" A_(i j) \
-      Y_i & = thetanaught + underbrace(W_i thetaw, "observed covariate effects") + underbrace(X_i thetax, "latent positional effect") + underbrace(thetay sum_(j != i) lc((X_i^top X_j) / (bb(E)[d_i | X])) Y_j, "latent contagion") + epsilon.alt_i quad & "requires" bb(P)(A_(i j) = 1)
+      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(X_i thetax, "latent\npositional\neffect") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, "latent contagion") + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
     $
+    where $d_i = sum_j A_(i j)$ and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$.
+
+    Let's forget about network noise for a second and ask two big questions:
+    + How should we estimate the probability of friendship $lc(bb(P)(A_(i j) = 1))$ between nodes $i$ and $j$?
+    + Do the coefficients $thetanaught, thetaw, thetax$ and especially $thetay$ from the #lc([latent contagion]) model actually mean anything?
   ]
 ]
 
 #slide[
-  = ...based on a low-rank network model
+  = We estimate friendships based on a low-rank network model
 
   #toolbox.side-by-side(gutter: 1em)[
     #image("figures/blockmodel-poster.png", height: 60%)
@@ -433,20 +361,43 @@
     $ bb(P)(A_(i j) = 1 | Z, omega, B) = underbrace(omega_i Z_i B Z_j^top omega_j, "rank" r) $
   ]
 
-  #text(size: 0.7em)[Only assume undirected $A in R^(n times n)$ with low rank $P = bb(E)[A | X] = X X^top$ and sub-gamma (Bernoulli, Poisson, Gaussian, Gamma, ...) deviations around $A$.]
+  #text(
+    size: 0.7em,
+  )[Only assume undirected $A in R^(n times n)$ with low rank $P = bb(E)[A | X] = X X^top$ and sub-gamma (Bernoulli, Poisson, Gaussian, Gamma, ...) deviations around $A$.]
+]
+
+
+#slide[
+  = We estimate friendships based on a low-rank network model
+
+  #toolbox.side-by-side(gutter: 1em)[
+    #image("figures/blockmodel-poster.png", height: 60%)
+  ][
+    TODO: estimating $X$ via principal components analysis
+
+    Well-known theory: this works
+  ]
 ]
 
 #slide[
-  = Estimating contagion with noisy data
+  = Okay but does the latent contagion model mean anything?
 
-  + Humans constantly *influence each other*. We want to *estimate how strong social influence* is.
-  + However, *measuring friendships is challenging*.
-  + To estimate social influence, we *need to know who is friends with whom*.
-  + We propose *a method that works with noisy friendship measurements*.
+  #text(size: 0.6em)[
+    $
+      Y_i & = betanaught + W_i betaw + X_i betax + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i & "requires all" A_(i j) \
+      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(X_i thetax, "latent\npositional\neffect") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, "latent contagion") + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
+    $
+    where $d_i = sum_j A_(i j)$ and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$.
+
+    Let's forget about network noise for a second and ask two big questions:
+    + How should we estimate the probability of friendship $lc(bb(P)(A_(i j) = 1))$ between nodes $i$ and $j$?
+    + Do the coefficients $thetanaught, thetaw, thetax$ and especially $thetay$ from the #lc([latent contagion]) model actually mean anything?
+  ]
 ]
 
+
 #slide[
-  = ...to estimate how much people influence each other
+  = First: we can estimate the latent contagion coefficients
 
   #text(size: 0.65em)[
     Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$. Put $hat(X) = hat(U) hat(S)^(1\/2)$ and $hat(P) = hat(X) hat(X)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n).$ Let $hat(Q) = [W space hat(X) space hat(G) Y]$ and $hat(H) = [W space hat(X) space hat(G) W space hat(G) hat(X) space hat(G)^2 W space hat(G)^2 hat(X)]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
@@ -454,26 +405,54 @@
 
     *Theorem:* $thetahattsls$ is asymptotically normal under the #lc[latent contagion] model
     $ sqrt(n) (thetahattsls - btheta) -> cal(N)(0, Sigma) $
+
+    TODO 
   ]
 ]
 
 #slide[
-  = This can be as good as knowing exact friendship!
+  = This is asymptotically as good as knowing exact friendship!
 
   *Theorem:* $thetahattsls$ is asymptotically normal under the #pc[peer contagion] model
   $ sqrt(n) (thetahattsls - bbeta) -> cal(N)(0, Sigma) $
 
-  #align(center)[How generally can we apply the strategy of replacing $A$ with $bb(P)(A)$?]
+  Latent contagion is a reasonable working model when  peer contagion is the true model, 
+
+  
 ]
 
 #slide[
-  = More about Alex Hayes
+  = Why is latent contagion a good working model in RDPGs?
 
-  - I'm an Assistant Professor in Statistics & Data Science
-  - I develop statistical methods for social networks and causal inference
-  - I write lots of `R` code and worked on some of the `tidyverse` packages
-  - I'm actively looking for collaborators!
+  #set figure(supplement: none)
+  #set figure.caption(position: bottom)
+  #toolbox.side-by-side(columns: (1fr, 1fr, 1fr), gutter: 1em)[
+    #figure(image("figures/matrices/A.png", width: 100%), caption: $A$, numbering: none)
+  ][
+    #figure(image("figures/matrices/P.png", width: 100%), caption: $bb(E)[A | X] = X X^top$, numbering: none)
+  ][
+    #figure(image("figures/matrices/Phat.png", width: 100%), caption: $hat(X) hat(X)^top$, numbering: none)
+  ]
 ]
+
+// TODO: projection equivalence result
+
+#new-section[Estimating peer effects from noisy data]
+
+#slide[
+  = The latent contagion estimator handles noisy network data
+
+  $thetahattsls$ only needs $Y, W$ and an estimate $hat(X)$ of $X$. if $hat(X)$ is a good estimate of $X$, we can estimate $lc(bb(P)(A_(i j) = 1))$ well and knowing $lc(bb(P)(A_(i j) = 1))$  is as good as knowing $A$
+
+  We don't need to know $A$, we just need to be able to estimate the principal components of $A$
+]
+
+#slide[
+  = Use progressively more exotic datasets to estimate $X$
+  
+  TODO
+]
+
 
 #slide[
   = Our estimators can handle noisy measurements
@@ -506,6 +485,16 @@
 
 #new-section[My background and research]
 
+
+#slide[
+  = More about Alex Hayes
+
+  - I'm an Assistant Professor in Statistics & Data Science
+  - I develop statistical methods for social networks and causal inference
+  - I write lots of `R` code and worked on some of the `tidyverse` packages
+  - I'm actively looking for collaborators!
+]
+
 #slide[
   = My research interests and professional experience
 
@@ -531,11 +520,11 @@
 
   #toolbox.side-by-side(gutter: 5mm, columns: (1.3fr, 1fr))[
 
-    Network data is expensive, ARD is cheap
+    We propose one of the first methods to estimate peer effects that works with noisy friendship measurements
 
-    Two stage spectral estimation is convenient and enables full uncertainty quantification in downstream analysis
-
-    Good traits are strongly homophilous
+    // #align(center)[How generally can we apply the strategy of replacing $A$ with $bb(P)(A)$?]
+    
+    consulting obligation 
 
     #v(1em)
     #set list(marker: none)
@@ -549,8 +538,8 @@
             "https://bsky.app/profile/alexpghayes.com",
           )[\@alexpghayes.com]],
         [#box(image("figures/icons/envelope.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
-            "mailto:alexpgh@stanford.edu",
-          )[alexpgh\@stanford.edu]],
+            "mailto:alex.hayes@oregonstate.edu",
+          )[alex.hayes\@oregonstate.edu]],
         [#box(image("figures/icons/wordpress.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
             "https://www.alexpghayes.com",
           )[alexpghayes.com]],
@@ -562,12 +551,7 @@
   ][
     #image("figures/sin-theta-last-slide.png")
   ]
-
-  // #align(center)[
-  //   #text(muted, size: 0.8em)[These slides are available at github.com/alexpghayes/2025-11-14-madison-networks]
-  // ]
 ]
-
 
 #new-section[Appendix]
 
@@ -609,7 +593,7 @@
   $
   recalling that
   $
-    Q = [bold(1)_n space W space G W space G Y] quad quad quad quad G = D^(-1) A
+    Q = [1_n space W space G W space G Y] quad quad quad quad G = D^(-1) A
   $
   is the covariate matrix and
   $
@@ -619,19 +603,18 @@
 ]
 
 #slide[
-  = Estimators
+  = Estimator
 
-  - OLS: `lm(y ~ Gy + T + GT)`
-  - TSLS: `ivreg(y ~ Gy + T + GT | T + GT + G2T)`, with instruments $T$, $G T$, $G^2 T$
+  `ivreg(y ~ Gy + W | W + GW + G2W)`, with instruments $W$, $G W$, $G^2 W$
 ]
 
 #slide[
   = Random dot product graphs
 
   #text(size: 0.65em)[
-  #thmbox("Definition", name: cite(<young2007>, form: "prose"))[
-    Let $F$ be a distribution on $R^r$ such that $0 <= x^top y$ for all $x, y in "supp" F$ and the convex cone of $"supp" F$ is $r$-dimensional. Draw $X_1, X_2, dots, X_n diid F$, and collect these in the rows of $X in R^(n times r)$ for ease of notation. Conditional on these $n$ vectors, which we call _latent positions_, generate edges by drawing $\{A_(i j) : 1 <= i < j <= n\}$ as independent $(nu, b)$-subgamma random variables with $bb(E)[A_(i j) | X] = rho X_i^top X_j$, where $rho in [0, 1]$. Then we say that $A$ is distributed according to an $n$-vertex random dot product graph with latent position distribution $F$, $(nu, b)$-subgamma edges and sparsity factor $rho$. We write $(A, X) tilde "RDPG"(F, n)$.
-  ]
+    #thmbox("Definition", name: cite(<young2007>, form: "prose"))[
+      Let $F$ be a distribution on $R^r$ such that $0 <= x^top y$ for all $x, y in "supp" F$ and the convex cone of $"supp" F$ is $r$-dimensional. Draw $X_1, X_2, dots, X_n diid F$, and collect these in the rows of $X in R^(n times r)$ for ease of notation. Conditional on these $n$ vectors, which we call _latent positions_, generate edges by drawing $\{A_(i j) : 1 <= i < j <= n\}$ as independent $(nu, b)$-subgamma random variables with $bb(E)[A_(i j) | X] = rho X_i^top X_j$, where $rho in [0, 1]$. Then we say that $A$ is distributed according to an $n$-vertex random dot product graph with latent position distribution $F$, $(nu, b)$-subgamma edges and sparsity factor $rho$. We write $(A, X) tilde "RDPG"(F, n)$.
+    ]
   ]
 ]
 
