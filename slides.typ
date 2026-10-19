@@ -33,7 +33,7 @@
 #let thetax = lc($theta_"x"$)
 #let thetay = lc($theta_"y"$)
 #let btheta = lc($bold(theta)$)
-#let thetahattsls = lc($hat(theta)_"TSLS"$)
+#let thetahattsls = lc($hat(theta)$)
 
 
 // Annotation under/over an underbrace: small, centered, multi-line
@@ -264,7 +264,7 @@
   = Peer effects estimates need perfectly observed networks
 
   $
-    Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i
+    Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc(pc("peer contagion"))) + epsilon.alt_i
   $
 
   But we know networks are measurement with noisy and imperfectly
@@ -314,7 +314,7 @@
   = Peer effects estimates need perfectly observed networks
 
   $
-    Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i
+    Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc("peer contagion")) + epsilon.alt_i
   $
 
   But we know networks are measurement with noisy and imperfectly
@@ -326,10 +326,13 @@
 
   #text(size: 0.75em)[
     $
-      Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i & "requires all" A_(i j) \
-      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, "latent contagion") + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
+      Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc("peer contagion")) + epsilon.alt_i & "requires all" A_(i j) \
+      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, lc("latent contagion")) + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
     $
-    where $d_i = sum_j A_(i j)$ and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$.
+    #align(center, [
+      #v(1em)
+      #text(size: 0.8em)[where $d_i = sum_j A_(i j)$ is degree and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$ is expected degree.]
+    ])
 
     #uncover("2-")[
       Two big questions:
@@ -384,8 +387,8 @@
 
   #text(size: 0.9em)[
     $
-      Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, "peer contagion") + epsilon.alt_i & "requires all" A_(i j) \
-      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, "latent contagion") + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
+      Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc("peer contagion")) + epsilon.alt_i & "requires all" A_(i j) \
+      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(thetay sum_(j != i) lc((bb(P)(A_(i j) = 1)) / tilde(d)_i) Y_j, lc("latent contagion")) + epsilon.alt_i quad quad quad & "requires" bb(P)(A_(i j) = 1)
     $
     where $d_i = sum_j A_(i j)$ and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$.
   ]
@@ -421,8 +424,8 @@
   Population design matrices:
 
   $
-                  X = [W space G Y] quad quad quad quad quad quad quad & pc("peer contagion") \
-    tilde(X) = [W space tilde(G) Y] quad quad quad quad quad quad quad & lc("latent contagion")
+                  X = [W space G Y] quad quad quad quad quad quad quad & pc(pc("peer contagion")) \
+    tilde(X) = [W space tilde(G) Y] quad quad quad quad quad quad quad & lc(lc("latent contagion"))
   $
 
   *Theorem:* Under both peer and latent contagion models, in dense low-rank networks, the non-parametric projection functionals are very close
@@ -661,11 +664,65 @@
 #slide[
   = I'm currently working on: minimax rates for peer effects
 
-TODO
+  #let collinear-graph(labels, colors) = canvas(length: 1.5cm, {
+    import draw: *
+    let pts = ((0, 1), (1, 0), (1.5, 1.5), (2.75, 0.5))
+    // loop direction and label anchor chosen to avoid the edges at each node
+    let loop-angles = (180deg, 270deg, 90deg, 45deg)
+    let label-anchors = ("south-east", "east", "west", "north-west")
+    let r = 0.18
+    for i in range(4) {
+      for j in range(i + 1, 4) {
+        line(pts.at(i), pts.at(j), stroke: dark-teal)
+      }
+    }
+    for i in range(4) {
+      let (x, y) = pts.at(i)
+      let th = loop-angles.at(i)
+      circle(
+        (x + r * calc.cos(th), y + r * calc.sin(th)),
+        radius: r,
+        stroke: (paint: dark-teal, thickness: 1pt),
+      )
+      circle(pts.at(i), radius: 0.13, fill: colors.at(i), stroke: none)
+      content(pts.at(i), text(size: 0.65em, labels.at(i)), anchor: label-anchors.at(i), padding: 0.3)
+    }
+  })
+
+  #let node-colors = (bright, muted, bright, bright)
+
+  #align(center, grid(
+    columns: (1fr, 1fr),
+    collinear-graph(($T_1 = 1$, $T_2 = 0$, $T_3 = 1$, $T_4 = 1$), node-colors),
+    collinear-graph(
+      ($[G T]_1 = 3 slash 4$, $[G T]_2 = 3 slash 4$, $[G T]_3 = 3 slash 4$, $[G T]_4 = 3 slash 4$),
+      node-colors,
+    ),
+  ))
+
+  #align(center, text(size: 0.8em)[
+    $
+      mat(Y_1; Y_2; Y_3; Y_4)
+      =
+      mat(
+        delim: "[",
+        augment: #none,
+        1_n, G Y, T, G T;
+        pc(1), G Y_1, 1, pc(3 slash 4);
+        pc(1), G Y_2, 0, pc(3 slash 4);
+        pc(1), G Y_3, 1, pc(3 slash 4);
+        pc(1), G Y_4, 1, pc(3 slash 4);
+      )
+      mat(pc(alpha); beta; gamma; pc(delta))
+      + mat(epsilon.alt_1; epsilon.alt_2; epsilon.alt_3; epsilon.alt_4)
+    $
+  ])
+
+  #align(center)[Signal-to-noise ratio can tend to zero in network regression models]
 ]
 
 #slide[
-  = I'm currently working on: how to use ARD
+  = I'm currently working on: Aggregated Relational Data
 
   #let draw-matrix(origin, rows, cell-w, cell-h, stroke-style, row-colors: none, col-colors: none) = {
     import draw: *
@@ -778,17 +835,17 @@ TODO
   #align(center, [
     #image("figures/wisdom.png", height: 85%)
 
-#show link: underline
-    
-    #text(size: 0.8em)[Preliminary results: https://alexpghayes.github.io/wisdom]
-])
+    #show link: underline
 
-  
+    #text(size: 0.8em)[Preliminary results: https://alexpghayes.github.io/wisdom]
+  ])
+
+
 ]
 
 #slide[
   = More about Alex Hayes
-  
+
 
   - I'm an Assistant Professor in Statistics & Data Science
   - I develop statistical methods for social networks and causal inference
@@ -798,12 +855,12 @@ TODO
 
 #slide[
   = My plans for the upcoming year
-  
+
   - Trying to get things off my plate
   - As I do, looking for students to work with
   - Also an statistical consultant for the College of Ag
 
-  - Interested 
+  - Interested
 
   #toolbox.side-by-side(gutter: 1em)[
     *Research interests:*
