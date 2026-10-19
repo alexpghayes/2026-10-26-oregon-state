@@ -170,11 +170,6 @@
 
 ]
 
-
-// ---------------------------------------------------------------------------
-// Recent work on network regression
-// ---------------------------------------------------------------------------
-
 #new-section[Peer effects]
 
 #slide[
@@ -380,8 +375,6 @@
 
     Then $[hat(U) hat(S) hat(U)^top]_(i j) arrow bb(P)(A_(i j) = 1)$
 
-    "Adjacency Spectral Embedding"
-
     Principal components of nework!
   ]
 ]
@@ -458,52 +451,344 @@
 #slide[
   = The latent contagion estimator handles noisy network data
 
-  $thetahattsls$ only needs $Y, W$ and an estimate $hat(P)$ of $P$. Knowing $P_(i j) = lc(bb(P)(A_(i j) = 1))$  is as good as knowing $A$
+  $thetahattsls$ only needs $Y, W$ and an estimate $hat(P)$ of $P$
 
-  Since $P$ is low-rank, estimating $P$ just means estimating the principal components of $A$
+  Knowing $P_(i j) = lc(bb(P)(A_(i j) = 1))$  is as good as knowing $A$
+
+  Since $P$ is low-rank, just need the principal components of $A$
+
+  Entire matrix completion toolbox!
 ]
 
 #slide[
-  = Use progressively more exotic datasets to estimate $X$
+  = Estimating friendship probabilities: partial network
+  #toolbox.side-by-side(gutter: 1em)[
+    #align(center, image("figures/noisy/missing-data.png", height: 80%))
+  ][
+    #align(center, image("figures/noisy/missing-estimate.png", height: 80%))
+  ]
+  #align(center, [10% of edge missing at random (softImpute)])
+]
 
-  TODO
+#slide[
+  = Estimating friendship probabilities: contaminated edges
+  #toolbox.side-by-side(gutter: 1em)[
+    #align(center, image("figures/noisy/gaussian-data.png", height: 80%))
+  ][
+    #align(center, image("figures/noisy/gaussian-estimate.png", height: 80%))
+  ]
+
+  #align(center, [Edges contaminated by mean-zero i.i.d. noise (SVD)])
+]
+
+#slide[
+  = Estimating friendship probabilities: ego-centric sampling
+  #toolbox.side-by-side(gutter: 1em)[
+    #align(center, image("figures/noisy/ego-data.png", height: 80%))
+  ][
+    #align(center, image("figures/noisy/ego-estimate.png", height: 80%))
+  ]
+  #align(center, [Only see neighborhoods for 50% of nodes in network @chan2023])
 ]
 
 
 #slide[
-  = Our estimators can handle noisy measurements
+  = Even more exotic: _Aggregated Relational Data (ARD)_
 
-  #align(center, image("figures/all_matrices.png", height: 70%))
+  #toolbox.side-by-side(gutter: 5mm)[
+    *Traditional network measurement*
+  ][
+    *Aggregated Relational Data*
+  ]
+  #v(2em)
 
-  ...because latent structure is estimable at fast rates even in noisy networks
-]
 
-#slide[
-  = Anxiety before final exams amongst MBA students
+  #toolbox.side-by-side(gutter: 5mm)[
 
-  #text(size: 0.65em)[
-    Data on 241 MBA students from "Do Your Friends Stress You out? A Field Study of the Spread of Stress..." by Shihan et al (2023)
+    #v(1em)
 
-    #align(center)[
-      $
-        "anxiety" & ~ "personality + demographics + X +" lc("latent peer anxiety") \
-        "anxiety" & ~ "personality + demographics + X +" pc("peer anxiety")
-      $
-    ]
+    - Who do you go to for advice?
 
-    $X$ accounts for localized/group effects. Dimension of $X$ is unknown!
+    - Who do you visit?
 
-    #align(center, image("figures/anxiety/estimates.pdf", height: 45%))
+    - Who lends kerosene or rice to you?
+  ][
+    How many people do you know who...
 
-    #align(center)[*Model specification dramatically impacts inference*]
+    - gave birth to twins?
+
+    - completed a college degree?
+
+    - own a tractor?
   ]
 ]
 
-#new-section[My background and research]
+#slide[
+  = Estimating friendship probabilities: aggregated relational data
+  #toolbox.side-by-side(gutter: 1em)[
+
+    #let draw-matrix(origin, rows, cell-w, cell-h, stroke-style, row-colors: none, col-colors: none) = {
+      import draw: *
+      let n-rows = rows.len()
+      let n-cols = rows.at(0).len()
+      let (ox, oy) = origin
+      let total-w = cell-w * n-cols
+      let total-h = cell-h * n-rows
+
+      rect((ox, oy), (ox + total-w, oy + total-h), stroke: stroke-style)
+
+      for i in range(1, n-rows) {
+        line((ox, oy + i * cell-h), (ox + total-w, oy + i * cell-h), stroke: (
+          paint: stroke-style.paint,
+          thickness: 0.5pt,
+          dash: "dotted",
+        ))
+      }
+      for j in range(1, n-cols) {
+        line((ox + j * cell-w, oy), (ox + j * cell-w, oy + total-h), stroke: (
+          paint: stroke-style.paint,
+          thickness: 0.5pt,
+          dash: "dotted",
+        ))
+      }
+
+      for (i, row) in rows.enumerate() {
+        for (j, val) in row.enumerate() {
+          let text-color = stroke-style.paint
+          if row-colors != none {
+            text-color = row-colors.at(i)
+          } else if col-colors != none {
+            text-color = col-colors.at(j)
+          }
+
+          let cx = ox + j * cell-w + cell-w / 2
+          let cy = oy + (n-rows - 1 - i) * cell-h + cell-h / 2
+          content((cx, cy), text(fill: text-color, size: 18pt, weight: "bold")[$#val$], anchor: "center")
+        }
+      }
+    }
+
+    #align(center + horizon)[
+      #fit-width(canvas(length: 1.8cm, {
+        // fit-width scales the whole drawing down to the column
+        import draw: *
+
+        let s = (paint: dark-teal, thickness: 1.8pt)
+        let s-grey = (paint: muted, thickness: 1.8pt)
+
+        let cw = 1.1
+        let ch = 1.1
+        let gap = 1.2
+
+        // Data
+        let a-rows = (
+          ("0", "1", "1", "0", "0"),
+          ("1", "0", "1", "0", "0"),
+          ("1", "1", "0", "1", "0"),
+          ("0", "0", "1", "0", "1"),
+          ("0", "0", "0", "1", "0"),
+        )
+        let w-rows = (("1", "0", "0"), ("1", "0", "0"), ("0", "1", "0"), ("0", "0", "1"), ("0", "0", "1"))
+        let y-rows = (("1", "1", "0"), ("1", "1", "0"), ("2", "0", "1"), ("0", "1", "1"), ("0", "0", "1"))
+
+        // Colors
+        let y-col-colors = (olive, bright, red)
+        let w-row-colors = (olive, olive, bright, red, red)
+
+        let yw = 3 * cw
+        let aw = 5 * cw
+        let ww = 3 * cw
+        let mat-h = 5 * ch
+
+        let y-ox = 0.0
+        let a-ox = y-ox + yw + gap
+        let w-ox = a-ox + aw + gap
+
+        // ── Y matrix
+        draw-matrix((y-ox, 0), y-rows, cw, ch, s, col-colors: y-col-colors)
+        content((y-ox + yw / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[Y (ARD counts)], anchor: "south")
+        content((y-ox + yw / 2, -0.4), text(fill: dark-teal, size: 22pt)[$NN^(n times k)$], anchor: "north")
+
+        content((y-ox + yw + gap / 2, mat-h / 2), text(fill: dark-teal, size: 24pt)[$=$])
+
+        // ── A matrix (muted matrix, Black labels)
+        draw-matrix((a-ox, 0), a-rows, cw, ch, s-grey)
+        content((a-ox + aw / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[A (network)], anchor: "south")
+        content((a-ox + aw / 2, -0.4), text(fill: dark-teal, size: 22pt)[${0, 1}^(n times n)$], anchor: "north")
+
+        content((a-ox + aw + gap / 2, mat-h / 2), text(fill: dark-teal, size: 24pt)[$times$])
+
+        // ── W matrix
+        draw-matrix((w-ox, 0), w-rows, cw, ch, s, row-colors: w-row-colors)
+        content((w-ox + ww / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[W (traits)], anchor: "south")
+        content((w-ox + ww / 2, -0.4), text(fill: dark-teal, size: 22pt)[${0, 1}^(n times k)$], anchor: "north")
+      }))
+    ]
+  ][
+    #align(center, image("figures/noisy/ard-estimate.png", height: 80%))
+  ]
+  #align(center, [Only see friend trait counts and traits (Hayes et al 2026+)])
+]
+
+#slide[
+  = Simulations validate our estimator with noisy data
+
+  #align(center, image("figures/mse_rho_all-n34.png", height: 100%))
+
+]
 
 
 #slide[
+  #text(size: 0.8em)[
+    #takeaway(
+      "Takeaway 1",
+    )[Peer effects can be estimated without observing the network exactly: use estimated friendship probabilites as the "network."]
+
+    #v(0.5em)
+    #takeaway(
+      "Takeaway 2",
+    )[We can use the entire toolbox of matrix completion techniques to handle network noise in low-rank networks.]
+
+
+    #v(0.5em)
+    #align(center, [Does plugging in $hat(EE)[A]$ in for $A$ work as a general technique to handle noise in networks?])
+  ]
+]
+
+#new-section[Shameless self-promotion]
+
+
+#slide[
+  = I'm currently working on: minimax rates for peer effects
+
+TODO
+]
+
+#slide[
+  = I'm currently working on: how to use ARD
+
+  #let draw-matrix(origin, rows, cell-w, cell-h, stroke-style, row-colors: none, col-colors: none) = {
+    import draw: *
+    let n-rows = rows.len()
+    let n-cols = rows.at(0).len()
+    let (ox, oy) = origin
+    let total-w = cell-w * n-cols
+    let total-h = cell-h * n-rows
+
+    rect((ox, oy), (ox + total-w, oy + total-h), stroke: stroke-style)
+
+    for i in range(1, n-rows) {
+      line((ox, oy + i * cell-h), (ox + total-w, oy + i * cell-h), stroke: (
+        paint: stroke-style.paint,
+        thickness: 0.5pt,
+        dash: "dotted",
+      ))
+    }
+    for j in range(1, n-cols) {
+      line((ox + j * cell-w, oy), (ox + j * cell-w, oy + total-h), stroke: (
+        paint: stroke-style.paint,
+        thickness: 0.5pt,
+        dash: "dotted",
+      ))
+    }
+
+    for (i, row) in rows.enumerate() {
+      for (j, val) in row.enumerate() {
+        let text-color = stroke-style.paint
+        if row-colors != none {
+          text-color = row-colors.at(i)
+        } else if col-colors != none {
+          text-color = col-colors.at(j)
+        }
+
+        let cx = ox + j * cell-w + cell-w / 2
+        let cy = oy + (n-rows - 1 - i) * cell-h + cell-h / 2
+        content((cx, cy), text(fill: text-color, size: 18pt, weight: "bold")[$#val$], anchor: "center")
+      }
+    }
+  }
+
+  #align(center + horizon)[
+    #fit-width(canvas(length: 1.8cm, {
+      // fit-width scales the whole drawing down to the column
+      import draw: *
+
+      let s = (paint: dark-teal, thickness: 1.8pt)
+      let s-grey = (paint: muted, thickness: 1.8pt)
+
+      let cw = 1.1
+      let ch = 1.1
+      let gap = 1.2
+
+      // Data
+      let a-rows = (
+        ("0", "1", "1", "0", "0"),
+        ("1", "0", "1", "0", "0"),
+        ("1", "1", "0", "1", "0"),
+        ("0", "0", "1", "0", "1"),
+        ("0", "0", "0", "1", "0"),
+      )
+      let w-rows = (("1", "0", "0"), ("1", "0", "0"), ("0", "1", "0"), ("0", "0", "1"), ("0", "0", "1"))
+      let y-rows = (("1", "1", "0"), ("1", "1", "0"), ("2", "0", "1"), ("0", "1", "1"), ("0", "0", "1"))
+
+      // Colors
+      let y-col-colors = (olive, bright, red)
+      let w-row-colors = (olive, olive, bright, red, red)
+
+      let yw = 3 * cw
+      let aw = 5 * cw
+      let ww = 3 * cw
+      let mat-h = 5 * ch
+
+      let y-ox = 0.0
+      let a-ox = y-ox + yw + gap
+      let w-ox = a-ox + aw + gap
+
+      // ── Y matrix
+      draw-matrix((y-ox, 0), y-rows, cw, ch, s, col-colors: y-col-colors)
+      content((y-ox + yw / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[Y (ARD counts)], anchor: "south")
+      content((y-ox + yw / 2, -0.4), text(fill: dark-teal, size: 22pt)[$NN^(n times k)$], anchor: "north")
+
+      content((y-ox + yw + gap / 2, mat-h / 2), text(fill: dark-teal, size: 24pt)[$=$])
+
+      // ── A matrix (muted matrix, Black labels)
+      draw-matrix((a-ox, 0), a-rows, cw, ch, s-grey)
+      content((a-ox + aw / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[A (network)], anchor: "south")
+      content((a-ox + aw / 2, -0.4), text(fill: dark-teal, size: 22pt)[${0, 1}^(n times n)$], anchor: "north")
+
+      content((a-ox + aw + gap / 2, mat-h / 2), text(fill: dark-teal, size: 24pt)[$times$])
+
+      // ── W matrix
+      draw-matrix((w-ox, 0), w-rows, cw, ch, s, row-colors: w-row-colors)
+      content((w-ox + ww / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[W (traits)], anchor: "south")
+      content((w-ox + ww / 2, -0.4), text(fill: dark-teal, size: 22pt)[${0, 1}^(n times k)$], anchor: "north")
+    }))
+  ]
+]
+
+#slide[
+  = I'm currently working on: network central limit theorems
+
+  #align(center, image("figures/affinity-set-screenshot.png"))
+]
+
+#slide[
+  = I'm currently working on: maps of public opinion about DEI
+
+  #align(center, [
+    #image("figures/wisdom.png", height: 85%)
+
+#show link: underline
+    
+    #text(size: 0.8em)[Preliminary results: https://alexpghayes.github.io/wisdom]
+])
+
+  
+]
+
+#slide[
   = More about Alex Hayes
+  
 
   - I'm an Assistant Professor in Statistics & Data Science
   - I develop statistical methods for social networks and causal inference
@@ -512,15 +797,20 @@
 ]
 
 #slide[
-  = My research interests and professional experience
+  = My plans for the upcoming year
+  
+  - Trying to get things off my plate
+  - As I do, looking for students to work with
+  - Also an statistical consultant for the College of Ag
+
+  - Interested 
 
   #toolbox.side-by-side(gutter: 1em)[
     *Research interests:*
     - (Social) networks
     - Causal inference
     - Peer effects
-    - Social processes in science
-    - Software design
+
   ][
     *Professional background:*
     - PhD Statistics, UW-Madison
@@ -537,10 +827,6 @@
   #toolbox.side-by-side(gutter: 5mm, columns: (1.3fr, 1fr))[
 
     We propose one of the first methods to estimate peer effects that works with noisy friendship measurements
-
-    // #align(center)[How generally can we apply the strategy of replacing $A$ with $bb(P)(A)$?]
-
-    consulting obligation
 
     #v(1em)
     #set list(marker: none)
@@ -565,20 +851,37 @@
       )
     ]
   ][
-    #align(center, image("figures/sin-theta-last-slide.png", height: 8cm))
-
-    #v(0.2em)
-    #align(right, grid(
-      columns: (auto, auto),
-      column-gutter: 1em,
-      align: horizon + left,
-      box(clip: true, radius: 1em, image("figures/keith.jpg", width: 3.2em, height: 4em, fit: "cover")),
-      text(size: 0.7em)[Joint work with \ Keith Levin],
-    ))
+    #align(center, image("figures/all_matrices.png", height: 100%))
   ]
 ]
 
 #new-section[Appendix]
+
+#slide[
+  = Anxiety before final exams amongst MBA students
+
+  #toolbox.side-by-side(columns: (0.47fr, 0.53fr), gutter: 1em)[
+    #text(size: 0.7em)[
+      Data on 241 MBA students from "Do Your Friends Stress You out? A Field Study of the Spread of Stress..." by Shihan et al (2023)
+
+      #v(1em)
+      #align(center)[
+        $
+          "anxiety" & ~ "personality + demographics + X +" \
+                    & quad lc("latent peer anxiety") \
+          "anxiety" & ~ "personality + demographics + X +" \
+                    & quad pc("peer anxiety")
+        $
+      ]
+      #v(1em)
+
+      $X$ accounts for localized/group effects. Dimension of $X$ is unknown!
+    ]
+  ][
+    #align(center + horizon, image("figures/anxiety/estimates.png", width: 100%))
+  ]
+  #align(center, [*Model specification dramatically impacts inference*])
+]
 
 #slide[
   = Assumptions of the canonical two-stage least squares estimator
@@ -644,5 +947,5 @@
 ]
 
 #slide[
-  // #bibliography("ard-trait-selection.bib", "2025-02-19-jobtalk.bib")
+  #bibliography("latent-contagion.bib", style: "chicago-author-date")
 ]

@@ -408,3 +408,9 @@
     ]
   }
 ]
+
+// Scale `body` down (never up) so it fits the width of its container
+#let fit-width(body) = layout(size => {
+  let m = measure(body)
+  scale(calc.min(1, size.width / m.width) * 100%, reflow: true, body)
+})

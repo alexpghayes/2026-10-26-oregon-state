@@ -1,5 +1,7 @@
 library(targets)
 library(crew)
+library(tarchetypes)
+library(tibble)
 
 # Figures for slides.typ. Run with targets::tar_make(); outputs land in figures/.
 # Colors are read from theme.typ and text is set in the deck font (see R/theme.R).
@@ -23,6 +25,7 @@ tar_option_set(
     "purrr",
     "ragg",
     "readr",
+    "RSpectra",
     "rlang",
     "scales",
     "stringr",
@@ -61,6 +64,19 @@ list(
     time_varying_figure,
     make_time_varying_figure(palette),
     format = "file"
+  ),
+
+  # --- noisy data and the low-rank structure estimated from it ------------
+  tar_target(noisy_population, simulate_noisy_population()),
+  tar_map(
+    values = tibble(noise_type = noisy_types),
+    names = noise_type,
+    tar_target(noisy_sim, simulate_noisy_data(noisy_population, noise_type)),
+    tar_target(
+      noisy_figures,
+      make_noisy_figures(noisy_sim, noise_type, palette),
+      format = "file"
+    )
   ),
 
   # --- anxiety application (Li et al. 2023 data) --------------------------

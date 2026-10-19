@@ -329,5 +329,5 @@ plot_anxiety_estimates <- function(estimates, palette) {
       color = "Estimator"
     )
 
-  save_deck_plot(plot, "figures/anxiety/estimates.pdf", width = 10, height = 9 * 9 / 16)
+  save_deck_plot(plot, "figures/anxiety/estimates.png", width = 10, height = 9 * 9 / 16, dpi = 300)
 }

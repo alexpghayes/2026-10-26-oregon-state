@@ -46,8 +46,15 @@ theme_deck <- function(palette, base_size = 18, void = FALSE) {
   }
 }
 
-# Save a plot (PNG via ragg, PDF via cairo so fonts are embedded); returns the path
+# Save a plot with a transparent background (PNG via ragg, PDF via cairo so fonts are embedded); returns the path
 save_deck_plot <- function(plot, path, width, height, dpi = 300) {
+  # `&` also reaches patchwork composites, whose outer background is otherwise opaque
+  plot <- plot &
+    theme(
+      plot.background = element_rect(fill = "transparent", color = NA),
+      panel.background = element_rect(fill = "transparent", color = NA)
+    )
+
   if (str_detect(path, "\\.pdf$")) {
     ggsave(path, plot, width = width, height = height, device = cairo_pdf, bg = "transparent", create.dir = TRUE)
   } else {
