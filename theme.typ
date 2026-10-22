@@ -64,7 +64,7 @@
     paper: "presentation-16-9",
     fill: white.darken(2%),
     margin: (top: 3em, rest: 1em),
-    footer: none,
+    footer: context align(right, text(size: 0.6em, counter(page).display())),
     header: slide-title-header,
   )
   set text(

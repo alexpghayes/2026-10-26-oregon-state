@@ -140,23 +140,13 @@
 
   #divider
 
+  Alex Hayes \
+  October 26, 2026
+
   #set text(size: .8em, weight: "light")
 
-  #let person(name, logo) = stack(
-    spacing: 1.1em,
-    text(size: 1.1em)[#name],
-    box(height: 3.2em, align(left + horizon, image(logo, width: 11em, height: 3.2em, fit: "contain"))),
-  )
 
-  #v(0.8em)
-  #grid(
-    columns: (1fr, 1fr),
-    column-gutter: 2em,
-    person([Alex Hayes], "figures/oregon-state/OSU_horizontal_2C_O_over_B.png"),
-    person([Keith Levin], "figures/uw-madison/color-flush-UWlogo-print.png"),
-  )
-
-  #place(bottom + right, text(size: 0.8em)[October 26, 2026])
+  #place(bottom + right, image("figures/oregon-state/OSU_horizontal_2C_O_over_B.png", height: 2.3cm))
 ]
 
 #slide[
@@ -164,9 +154,9 @@
 
   + What are peer effects and how do we estimate them?
 
-  + Estimating peer effects from noisy data
+  + Peer effects in latent spaces
 
-  + Other current projects + pitch to students and collaborators
+  + Shameless self-promotion
 
 ]
 
@@ -179,17 +169,17 @@
 ]
 
 #slide[
-  = These social influences are often called peer effects
+  = These social influences are called "peer effects" or "spillovers"
 
   #toolbox.side-by-side(columns: (0.35fr, 0.65fr), gutter: 1em)[
     #align(center, net(
       (
-        (0, 1.25, bright, none, (0, 0)),
+        (0, 1.25, muted, none, (0, 0)),
         (1.25, -1.25, muted, anxiety, (-1.1, -0.85)),
-        (1.9, 3.1, bright, none, (0, 0)),
+        (1.9, 3.1, muted, none, (0, 0)),
         (3.45, 0.6, bright, none, (0, 0)),
         (5.4, 3.0, muted, anxiety, (1.1, 0.85)),
-        (4.25, -1.75, bright, anxiety, (0, -1.3)),
+        (4.25, -1.75, muted, anxiety, (0, -1.3)),
         (5.9, 0.1, muted, anxiety, (1.3, 0)),
       ),
       ((0, 1), (0, 2), (1, 2), (1, 3), (3, 5), (2, 3), (3, 4), (1, 5), (5, 6), (6, 4), (4, 2)),
@@ -198,11 +188,11 @@
     ))
   ][
     #set par(spacing: 1.2em)
-    #only("1-")[*Direct effect*: if I #hl[meditate], I am less likely to be anxious for my final #anxiety]
+    // #only("1-")[*Direct effect*: if I #hl[meditate], I am less likely to be anxious for my final #anxiety]
 
     #only("1-")[*Contagion*: if my friends are anxious #anxiety, I am more likely to be anxious #anxiety]
 
-    #only("1-")[*Interference*: if my friends #hl[meditate], I am less likely to be anxious #anxiety]
+    // #only("1-")[*Interference*: if my friends #hl[meditate], I am less likely to be anxious #anxiety]
 
     #uncover("2-")[
       #text(
@@ -217,12 +207,12 @@
 
   #let friends-net(reveal) = net(
     (
-      (0, 1.25, bright, none, (0, 0)),
+      (0, 1.25, muted, none, (0, 0)),
       (1.25, -1.25, muted, anxiety, (-1.1, -0.85)),
-      (1.9, 3.1, bright, none, (0, 0)),
+      (1.9, 3.1, muted, none, (0, 0)),
       (3.45, 0.6, bright, none, (0, 0)),
       (5.4, 3.0, muted, anxiety, (1.1, 0.85)),
-      (4.25, -1.75, bright, anxiety, (0, -1.3)),
+      (4.25, -1.75, muted, anxiety, (0, -1.3)),
       (5.9, 0.1, muted, anxiety, (1.3, 0)),
     ),
     ((0, 1), (0, 2), (1, 2), (1, 3), (3, 5), (2, 3), (3, 4), (1, 5), (5, 6), (6, 4), (4, 2)),
@@ -261,13 +251,24 @@
 
 
 #slide[
-  = Peer effects estimates need perfectly observed networks
+  = Peer effects estimators need perfectly observed networks
 
-  $
-    Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc(pc("peer contagion"))) + epsilon.alt_i
-  $
+  #align(center)[
+    $
+      underbrace(Y_i, "outcome") = underbrace(betanaught, "intercept") + underbrace(W_i betaw, "covariate\neffects") + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc("average outcome\namong friends")) + underbrace(epsilon.alt_i, "noise")
+    $
+  ]
 
-  But we know networks are measurement with noisy and imperfectly
+
+  #align(center, [
+    #text(
+      size: 0.8em,
+    )[$pc(A_(i j)) in {0, 1}$ indicates a friendship between $i$ and $j$, and $d_i = sum_j A_(i j)$ is $i$'s number of friends
+
+      ...but the edges $pc(A_(i j))$ are always measured with noise!
+    ]
+  ])
+
 ]
 
 #slide[
@@ -304,7 +305,7 @@
     #uncover("5-")[
       #text(
         size: 0.8em,
-      )[Because $Y_i$ and $Y_j$ are dependent, cannot use ordinary least squares #sym.arrow typically use two-stage least squares/instrumental variables instead]
+      )[Because $Y_i$ and $Y_j$ are dependent, cannot use ordinary least squares #sym.arrow typically use two-stage least squares instead.  Use friends-of-friends' covariates $G^2 W$ as instruments.]
     ]
   ]
 ]
@@ -317,9 +318,14 @@
     Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc("peer contagion")) + epsilon.alt_i
   $
 
-  But we know networks are measurement with noisy and imperfectly
+  #align(center)[
+    #text(size: 0.8em)[
+      ...but the edges $pc(A_(i j))$ are always measured with noise!
+    ]
+  ]
 ]
 
+#new-section([Peer effects in latent spaces])
 
 #slide[
   = We propose a model based on probability of friendship instead
@@ -331,7 +337,9 @@
     $
     #align(center, [
       #v(1em)
-      #text(size: 0.8em)[where $d_i = sum_j A_(i j)$ is degree and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$ is expected degree.]
+      #text(
+        size: 0.8em,
+      )[where $d_i = sum_j A_(i j)$ is degree and $tilde(d)_i = Sigma_j bb(P)(A_(i j) = 1)$ is expected degree.]
     ])
 
     #uncover("2-")[
@@ -378,7 +386,7 @@
 
     Then $[hat(U) hat(S) hat(U)^top]_(i j) arrow bb(P)(A_(i j) = 1)$
 
-    Principal components of nework!
+    Principal components of network!
   ]
 ]
 
@@ -399,11 +407,27 @@
   = First: we can estimate the latent contagion coefficients
 
   #text(size: 0.9em)[
-    Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$. Put $hat(P) = hat(U) hat(S) hat(U)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n).$ Let $hat(X) = [W space hat(G) Y]$ and $hat(H) = [W space hat(G) W space hat(G)^2 W]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
+    /* Previous dense version:
+    Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$. Put $hat(P) = hat(U) hat(S) hat(U)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n).$ Let $hat(X) = [W space hat(G) Y]^*$ and $hat(H) = [W space hat(G) W space hat(G)^2 W]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
     $ thetahattsls = (hat(X)^top hat(M) hat(X))^(-1) hat(X)^top hat(M) Y $
+    */
+
+    #align(center)[
+      #text(size: 1.1em)[
+        $
+          "Noisy" A quad stretch(->)^"rank-"r "SVD" quad hat(P) quad stretch(->)^"row-normalize" quad hat(G) = hat(D)^(-1) hat(P) quad stretch(->)^"2SLS" quad thetahattsls
+        $
+      ]
+    ]
+
+    - *Identification:* instruments $[W space hat(G) W space hat(G)^2 W]$ must add rank beyond $W$ #sym.arrow requires $hat(G)$ to vary non-linearly across vertices (via $hat(D)^(-1)$) and $r$ small relative to the number of covariates; "sufficiently dense" means expected degree grows fast enough that $hat(P)$ converges.
 
     *Theorem:* In sufficiently dense low-rank networks, $thetahattsls$ is asymptotically normal under the #lc[latent contagion] model
     $ sqrt(n) (thetahattsls - btheta) -> cal(N)(0, Sigma) $
+
+    #text(size: 0.8em, fill: gray)[
+      \* Slightly simplified for intuition, need additional terms for identification
+    ]
   ]
 ]
 
@@ -419,7 +443,7 @@
 #slide[
   = Asymptotically, $bbeta$ and $btheta$ have the same interpretation
 
-  Let $tilde(d)_i = sum_j P_(i j)$ and $hat(D) = "diag"(tilde(d)_1, ..., tilde(d)_n)$ and $tilde(G) = tilde(D)^(-1) P in R^(n times n).$
+  Let $tilde(d)_i = sum_j P_(i j)$ and $tilde(D) = "diag"(tilde(d)_1, ..., tilde(d)_n)$ and $tilde(G) = tilde(D)^(-1) P in R^(n times n).$
 
   Population design matrices:
 
@@ -607,9 +631,9 @@
         let a-ox = y-ox + yw + gap
         let w-ox = a-ox + aw + gap
 
-        // ── Y matrix
+        // ── C matrix
         draw-matrix((y-ox, 0), y-rows, cw, ch, s, col-colors: y-col-colors)
-        content((y-ox + yw / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[Y (ARD counts)], anchor: "south")
+        content((y-ox + yw / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[C (ARD counts)], anchor: "south")
         content((y-ox + yw / 2, -0.4), text(fill: dark-teal, size: 22pt)[$NN^(n times k)$], anchor: "north")
 
         content((y-ox + yw + gap / 2, mat-h / 2), text(fill: dark-teal, size: 24pt)[$=$])
@@ -642,10 +666,37 @@
 
 
 #slide[
+  = Anxiety before final exams amongst MBA students
+
+  #toolbox.side-by-side(columns: (0.47fr, 0.53fr), gutter: 1em)[
+    #text(size: 0.7em)[
+      Data on 241 MBA students from "Do Your Friends Stress You out? A Field Study of the Spread of Stress..." by Shihan et al (2023)
+
+      #v(1em)
+      #align(center)[
+        $
+          "anxiety" & ~ "personality + demographics + U +" \
+                    & quad lc("latent peer anxiety") \
+          "anxiety" & ~ "personality + demographics + U +" \
+                    & quad pc("peer anxiety")
+        $
+      ]
+      #v(1em)
+
+      $U$ accounts for localized/group effects. Dimension of $U$ is unknown!
+    ]
+  ][
+    #align(center + horizon, image("figures/anxiety/estimates.png", width: 100%))
+  ]
+  #align(center, [*Model specification dramatically impacts inference*])
+]
+
+
+#slide[
   #text(size: 0.8em)[
     #takeaway(
       "Takeaway 1",
-    )[Peer effects can be estimated without observing the network exactly: use estimated friendship probabilites as the "network."]
+    )[Peer effects can be estimated without observing the network exactly: use estimated friendship probabilities as the "network."]
 
     #v(0.5em)
     #takeaway(
@@ -691,15 +742,15 @@
 
   #let node-colors = (bright, muted, bright, bright)
 
-  #align(center, grid(
-    columns: (1fr, 1fr),
-    collinear-graph(($T_1 = 1$, $T_2 = 0$, $T_3 = 1$, $T_4 = 1$), node-colors),
-    collinear-graph(
-      ($[G T]_1 = 3 slash 4$, $[G T]_2 = 3 slash 4$, $[G T]_3 = 3 slash 4$, $[G T]_4 = 3 slash 4$),
-      node-colors,
-    ),
+  #align(center, collinear-graph(
+    ($[G T]_1 = 3 slash 4$, $[G T]_2 = 3 slash 4$, $[G T]_3 = 3 slash 4$, $[G T]_4 = 3 slash 4$),
+    node-colors,
   ))
 
+  #v(0.5em)
+  #align(center, text(size: 1.6em)[$"Col"(G T) prop 1_n quad ==> quad$ peer covariates collapse to the intercept!])
+
+  /* Previous 4x4 matrix arithmetic:
   #align(center, text(size: 0.8em)[
     $
       mat(Y_1; Y_2; Y_3; Y_4)
@@ -717,6 +768,7 @@
       + mat(epsilon.alt_1; epsilon.alt_2; epsilon.alt_3; epsilon.alt_4)
     $
   ])
+  */
 
   #align(center)[Signal-to-noise ratio can tend to zero in network regression models]
 ]
@@ -801,9 +853,9 @@
       let a-ox = y-ox + yw + gap
       let w-ox = a-ox + aw + gap
 
-      // ── Y matrix
+      // ── C matrix
       draw-matrix((y-ox, 0), y-rows, cw, ch, s, col-colors: y-col-colors)
-      content((y-ox + yw / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[Y (ARD counts)], anchor: "south")
+      content((y-ox + yw / 2, mat-h + 0.5), text(fill: dark-teal, size: 22pt)[C (ARD counts)], anchor: "south")
       content((y-ox + yw / 2, -0.4), text(fill: dark-teal, size: 22pt)[$NN^(n times k)$], anchor: "north")
 
       content((y-ox + yw + gap / 2, mat-h / 2), text(fill: dark-teal, size: 24pt)[$=$])
@@ -844,40 +896,6 @@
 ]
 
 #slide[
-  = More about Alex Hayes
-
-
-  - I'm an Assistant Professor in Statistics & Data Science
-  - I develop statistical methods for social networks and causal inference
-  - I write lots of `R` code and worked on some of the `tidyverse` packages
-  - I'm actively looking for collaborators!
-]
-
-#slide[
-  = My plans for the upcoming year
-
-  - Trying to get things off my plate
-  - As I do, looking for students to work with
-  - Also an statistical consultant for the College of Ag
-
-  - Interested
-
-  #toolbox.side-by-side(gutter: 1em)[
-    *Research interests:*
-    - (Social) networks
-    - Causal inference
-    - Peer effects
-
-  ][
-    *Professional background:*
-    - PhD Statistics, UW-Madison
-    - Facebook Core Data Science (Intern)
-    - RStudio (Intern)
-    - B.A. Statistics, Rice University
-  ]
-]
-
-#slide[
 
   = Thank you! Questions? Comments?
 
@@ -886,25 +904,23 @@
     We propose one of the first methods to estimate peer effects that works with noisy friendship measurements
 
     #v(1em)
+
+    I am looking for *students* and *collaborators*
     #set list(marker: none)
+
+    #v(1em)
 
     #align(left)[
 
       #set text(size: 0.8em)
 
       #list(
-        [#box(image("figures/icons/bluesky.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
-            "https://bsky.app/profile/alexpghayes.com",
-          )[\@alexpghayes.com]],
         [#box(image("figures/icons/envelope.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
             "mailto:alex.hayes@oregonstate.edu",
           )[alex.hayes\@oregonstate.edu]],
         [#box(image("figures/icons/wordpress.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
             "https://www.alexpghayes.com",
           )[alexpghayes.com]],
-        [#box(image("figures/icons/github.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
-            "https://github.com/alexpghayes",
-          )[github.com/alexpghayes]],
       )
     ]
   ][
@@ -914,31 +930,6 @@
 
 #new-section[Appendix]
 
-#slide[
-  = Anxiety before final exams amongst MBA students
-
-  #toolbox.side-by-side(columns: (0.47fr, 0.53fr), gutter: 1em)[
-    #text(size: 0.7em)[
-      Data on 241 MBA students from "Do Your Friends Stress You out? A Field Study of the Spread of Stress..." by Shihan et al (2023)
-
-      #v(1em)
-      #align(center)[
-        $
-          "anxiety" & ~ "personality + demographics + X +" \
-                    & quad lc("latent peer anxiety") \
-          "anxiety" & ~ "personality + demographics + X +" \
-                    & quad pc("peer anxiety")
-        $
-      ]
-      #v(1em)
-
-      $X$ accounts for localized/group effects. Dimension of $X$ is unknown!
-    ]
-  ][
-    #align(center + horizon, image("figures/anxiety/estimates.png", width: 100%))
-  ]
-  #align(center, [*Model specification dramatically impacts inference*])
-]
 
 #slide[
   = Assumptions of the canonical two-stage least squares estimator
@@ -990,7 +981,7 @@
 #slide[
   = Estimator
 
-  `ivreg(y ~ Gy + W | W + GW + G2W)`, with instruments $W$, $G W$, $G^2 W$
+  `ivreg(y ~ Gy + W | W + GW + G^2W)`, with instruments $W$, $G W$, $G^2 W$
 ]
 
 #slide[
@@ -998,7 +989,7 @@
 
   #text(size: 0.95em)[
     #thmbox("Definition")[
-      Let $F$ be a distribution on $R^r$ such that $0 <= x^top y$ for all $x, y in "supp" F$ and the convex cone of $"supp" F$ is $r$-dimensional. Draw $X_1, X_2, dots, X_n diid F$, and collect these in the rows of $X in R^(n times r)$ for ease of notation. Conditional on these $n$ vectors, which we call _latent positions_, generate edges by drawing $\{A_(i j) : 1 <= i < j <= n\}$ as independent $(nu, b)$-subgamma random variables with $bb(E)[A_(i j) | X] = rho X_i^top X_j$, where $rho in [0, 1]$. Then we say that $A$ is distributed according to an $n$-vertex random dot product graph with latent position distribution $F$, $(nu, b)$-subgamma edges and sparsity factor $rho$. We write $(A, X) tilde "RDPG"(F, n)$.
+      Let $F$ be a distribution on $R^r$ such that $0 <= x^top y$ for all $x, y in "supp" F$ and the convex cone of $"supp" F$ is $r$-dimensional. Draw $Z_1, Z_2, dots, Z_n diid F$, and collect these in the rows of $Z in R^(n times r)$ for ease of notation. Conditional on these $n$ vectors, which we call _latent positions_, generate edges by drawing $\{A_(i j) : 1 <= i < j <= n\}$ as independent $(nu, b)$-subgamma random variables with $bb(E)[A_(i j) | Z] = rho Z_i^top Z_j$, where $rho in [0, 1]$. Then we say that $A$ is distributed according to an $n$-vertex random dot product graph with latent position distribution $F$, $(nu, b)$-subgamma edges and sparsity factor $rho$. We write $(A, Z) tilde "RDPG"(F, n)$.
     ]
   ]
 ]

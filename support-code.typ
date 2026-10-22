@@ -134,7 +134,7 @@
   let ti-x = a-ox-l + aw + a-gap / 2
 
   draw-matrix((y-ox-l, 0), y-rows, cw, ch, s, col-colors: y-col-colors)
-  content((y-ox-l + yw / 2, mat-h + 0.4), text(size: 12pt)[Y (ARD counts)], anchor: "south")
+  content((y-ox-l + yw / 2, mat-h + 0.4), text(size: 12pt)[C (ARD counts)], anchor: "south")
   content((y-ox-l + yw / 2, -0.3), text(size: 12pt)[$NN^(n times k)$], anchor: "north")
 
   content((eq-x, mat-h / 2), text(size: 16pt)[$=$], anchor: "center")
