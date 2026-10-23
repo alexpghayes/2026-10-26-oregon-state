@@ -80,7 +80,6 @@
   )))
 })
 
-#let meditation = box(image("figures/icons/meditation.svg", height: 1.3em), baseline: 0.3em)
 #let anxiety = "😰" // box(image("figures/icons/anxiety.svg", height: 1.1em), baseline: 0.2em)
 
 // Small network drawings.
@@ -319,11 +318,28 @@
     #uncover("5-")[
       #text(
         size: 0.8em,
-      )[Because $G Y$ and $epsilon$ are correlated, cannot use ordinary least squares #sym.arrow typically use two-stage least squares instead.  Use friends-of-friends' covariates $G^2 W$ as instruments.]
+      )[Because $G Y$ and $epsilon$ are correlated, cannot use ordinary least squares]
     ]
   ]
 ]
 
+#slide[
+  = Estimate via two-stage least squares with social instruments
+
+  #text(size: 0.9em)[
+
+    $
+      X & = [1_n space W space G Y] wide wide wide wide wide && "usual design matrix" \
+      H & = [1_n space W space G W space G^2 W]              && "peer-of-peer instruments" \
+      M & = H (H^top H)^(-1) H^top                           && "projection onto instruments"
+    $
+    Two-stage least squares estimator
+    $ hat(bbeta) = (X^top M X)^(-1) X^top M Y $
+
+    *Theorem* @kelejian1998: Under regularity conditions
+    $ sqrt(n) (hat(bbeta) - bbeta) -> cal(N)(0, Sigma_beta) $
+  ]
+]
 
 #slide[
   = Peer effects estimates need perfectly observed networks
@@ -401,21 +417,21 @@
     ]
   ][
 
-    Let $hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$.
+    Let $hat(P) = hat(U) hat(S) hat(U)^top$ be rank-$r$ SVD of $A$.
 
-    Then $[hat(U) hat(S) hat(U)^top]_(i j) arrow bb(E)[A_(i j)]$
+    Then $hat(P)_(i j) arrow bb(E)[A_(i j)]$
 
     Principal components of $A$
   ]
 ]
 
 #slide[
-  = Okay but does the latent contagion model mean anything?
+  = Is the #lc([latent contagion]) model a good working model?
 
   #text(size: 0.85em)[
     $
-      Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc("peer contagion")) + epsilon.alt_i & "requires all" A_(i j) \
-      Y_i & = thetanaught + underbrace(W_i thetaw, "observed\ncovariate\neffects") + underbrace(thetay sum_(j != i) lc(EE[A_(i j)] / tilde(d)_i) Y_j, lc("latent contagion")) + epsilon.alt_i quad quad quad & "requires" bb(E)[A_(i j)]
+      Y_i & = betanaught + W_i betaw + underbrace(betay sum_(j != i) pc(A_(i j) / d_i) Y_j, pc("average outcome\namong friends")) + epsilon.alt_i & "requires all" A_(i j) \
+      Y_i & = thetanaught + W_i thetaw + underbrace(thetay sum_(j != i) lc(EE[A_(i j)] / tilde(d)_i) Y_j, lc("average outcome\nweighted by\n friendship probability")) + epsilon.alt_i quad quad quad & "requires" bb(E)[A_(i j)]
     $
     #align(center, [
       #v(1em)
@@ -424,6 +440,19 @@
       )[where $d_i = sum_j A_(i j)$ is degree and $tilde(d)_i = sum_j bb(E)[A_(i j)]$ is expected degree.]
     ])
   ]
+]
+
+#slide[
+  = In dense networks the design matrices should be close
+
+  The difference in the design matrices is
+
+  $
+    underbrace(sum_(j != i) pc(A_(i j) / d_i) Y_j, pc("average outcome\namong friends")) - underbrace(sum_(j != i) lc(EE[A_(i j)] / tilde(d)_i) Y_j, lc("average outcome\nweighted by\n friendship probability"))
+    & = sum_(j != i) ( pc(A_(i j) / d_i) - lc(EE[A_(i j)] / tilde(d)_i)) Y_j \
+    & = cal(O)_p ((sqrt(n) log(n)) / d_i)
+  $
+  where $A_(i j) - EE[A_(i j)]$ are i.i.d. Close when $d_i >> sqrt(n) log(n)$!
 ]
 
 
@@ -439,74 +468,57 @@
   ][
     #figure(image("figures/matrices/Phat.png", width: 100%), caption: $hat(P)$, numbering: none)
   ]
-
 ]
 
 #slide[
-  = Density does the work: a law of large numbers over neighbors
-
-  $P approx hat(P)$ is not the whole story. Row $i$ of $(G - tilde(G)) Y$ averages about $d_i$ noisy terms, each with weight $1 slash d_i$, so it vanishes when degrees are large:
-  $ [(G - tilde(G)) Y]_i = sum_j (A_(i j) / d_i - P_(i j) / tilde(d)_i) Y_j = O_p (1 / sqrt(d_i)) $
-
-  Our theorems need #text(fill: red)[RATE: e.g. $tilde(d)_i gt.double$ ???] expected degree.
-]
-
-
-#slide[
-  = We propose estimation via  _network smoothing_
+  = Estimate latent contagion model by plugging $hat(P)$ in for $A$
 
   #text(size: 0.9em)[
-    /* Previous dense version:
-    Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$. Put $hat(P) = hat(U) hat(S) hat(U)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n)$ after setting the diagonal of $hat(P)$ to zero. Let $hat(X) = [1_n space W space hat(G) Y]^*$ and $hat(H) = [1_n space W space hat(G) W space hat(G)^2 W]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
+
+    Instead of using $G = D^(-1) A$,  define $hat(D) = "diag"(hat(P) 1_n)$ and $hat(G) = hat(D)^(-1) hat(P)$.
+
+    $
+        & #pc([peer contagion]) "estimator"                  &        & #lc([latent contagion]) "estimator" \
+      X & = [1_n space W space G Y] wide wide wide wide wide & hat(X) & = [1_n space W space hat(G) Y] \
+      H & = [1_n space W space G W space G^2 W]              & hat(H) & = [1_n space W space hat(G) W space hat(G)^2 W] \
+      M & = H (H^top H)^(-1) H^top                           & hat(M) & = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top
+    $
+    #lc([Latent contagion]) two-stage least squares estimator
     $ thetahattsls = (hat(X)^top hat(M) hat(X))^(-1) hat(X)^top hat(M) Y $
-    */
-
-    #align(center)[
-      #text(size: 1.1em)[
-        $
-          "Noisy" A quad stretch(->)^("smooth: rank-" r " SVD") quad hat(P) quad stretch(->)^"zero diag.," quad stretch(->)^"normalize" quad hat(G) = hat(D)^(-1) hat(P) quad stretch(->)^"2SLS" quad thetahattsls
-        $
-      ]
-    ]
-
-    *Theorem:* In sufficiently dense low-rank networks, $thetahattsls$ is asymptotically normal under the #lc[latent contagion] model
-    $ sqrt(n) (thetahattsls - btheta) -> cal(N)(0, Sigma) $
 
   ]
 ]
 
 #slide[
-  = First: we can estimate the latent contagion coefficients
+  = Latent contagion is a reasonable working model
 
   #text(size: 0.9em)[
-    /* Previous dense version:
-    Let $A approx hat(U) hat(S) hat(U)^top$ be the rank $r$ SVD of $A$. Put $hat(P) = hat(U) hat(S) hat(U)^top$ and $hat(d)_i = sum_j hat(P)_(i j)$ and $hat(D) = "diag"(hat(d)_1, ..., hat(d)_n)$ and $hat(G) = hat(D)^(-1) hat(P) in R^(n times n)$ after setting the diagonal of $hat(P)$ to zero. Let $hat(X) = [1_n space W space hat(G) Y]^*$ and $hat(H) = [1_n space W space hat(G) W space hat(G)^2 W]$. Let $hat(M) = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top$. Then
-    $ thetahattsls = (hat(X)^top hat(M) hat(X))^(-1) hat(X)^top hat(M) Y $
-    */
 
-    #align(center)[
-      #text(size: 1.1em)[
-        $
-          "Noisy" A quad stretch(->)^("smooth: rank-" r " SVD") quad hat(P) quad stretch(->)^"zero diag.," quad stretch(->)^"normalize" quad hat(G) = hat(D)^(-1) hat(P) quad stretch(->)^"2SLS" quad thetahattsls
-        $
-      ]
-    ]
+    In dense networks,
 
-    - *Identification:* instruments $[1_n space W space hat(G) W space hat(G)^2 W]$ must add rank beyond $[1_n space W]$ #sym.arrow requires $hat(G)$ to vary non-linearly across vertices (via $hat(D)^(-1)$) and $r$ small relative to the number of covariates; "sufficiently dense" means expected degree grows fast enough that $hat(P)$ converges.
+    *Theorem:* $thetahattsls$ is asymptotically normal under the #lc[latent contagion] model
+    $ sqrt(n) (thetahattsls - btheta) -> cal(N)(0, Sigma_theta) $
 
-    *Theorem:* In sufficiently dense low-rank networks, $thetahattsls$ is asymptotically normal under the #lc[latent contagion] model
-    $ sqrt(n) (thetahattsls - btheta) -> cal(N)(0, Sigma) $
+    #align(center)[and also]
 
+    *Theorem:* $thetahattsls$ is asymptotically normal under the #pc[peer contagion] model
+    $ sqrt(n) (thetahattsls - bbeta) -> cal(N)(0, Sigma_beta) $
+
+    #text(fill: muted)[\* Omitting some details about identification for intuition]
   ]
 ]
 
 #slide[
-  = This is asymptotically as good as knowing exact friendship!
+  = Practical limitations of the latent contagion model
 
-  *Theorem:* $thetahattsls$ is asymptotically normal under the #pc[peer contagion] model
-  $ sqrt(n) (thetahattsls - bbeta) -> cal(N)(0, Sigma) $
+  #takeaway(
+    "Density",
+  )[Our theory requires moderately dense networks but most real world social networks are sparse]
 
-  Latent contagion is a reasonable working model when  peer contagion is the true model
+  #takeaway(
+    "Identification",
+  )[It's often hard hard to distinguish between contagion and localized outcomes in a social network @hayes2026a @shalizi2011 ]
+
 ]
 
 #slide[
@@ -531,68 +543,61 @@
 #slide[
   = What do $bbeta$ and $btheta$ mean when models are misspecified?
 
-  Let $tilde(G) = tilde(D)^(-1) P$ where $tilde(D) = "diag"(tilde(d)_1, ..., tilde(d)_n)$. Define population expectations conditional on $(A, P, W)$:
+  Let $tilde(G) = tilde(D)^(-1) P$ where $tilde(D) = "diag"(tilde(d)_1, ..., tilde(d)_n)$. Write $EE_A [dot] = EE[dot | A, W]$ and $EE_P [dot] = EE[dot | P, W]$. Then
 
   $
-    bar(X) = EE[X | A, W] = [1_n space W space G bar(Y)], & quad M = H (H^top H)^(-1) H^top & quad pc("peer contagion") \
-    bar(tilde(X)) = EE[tilde(X) | P, W] = [1_n space W space tilde(G) bar(Y)], & quad tilde(M) = tilde(H) (tilde(H)^top tilde(H))^(-1) tilde(H)^top & quad lc("latent contagion")
+    EE_A [X] = [1_n space W space G EE_A [Y]], & quad M = H (H^top H)^(-1) H^top & quad pc("peer contagion") \
+    EE_P [tilde(X)] = [1_n space W space tilde(G) EE_P [Y]], & quad tilde(M) = tilde(H) (tilde(H)^top tilde(H))^(-1) tilde(H)^top & quad lc("latent contagion")
   $
+]
 
+#slide[
+  = What do $bbeta$ and $btheta$ mean when models are misspecified?
   Define the *population TSLS projection estimands*:
 
   $
-    bbeta^* = (bar(X)^top M bar(X))^(-1) bar(X)^top M bar(Y) quad "and" quad btheta^* = (bar(tilde(X))^top tilde(M) bar(tilde(X)))^(-1) bar(tilde(X))^top tilde(M) bar(Y)
+    bbeta^* = (EE_A [X]^top M EE_A [X])^(-1) EE_A [X]^top M EE_A [Y] \
+    btheta^* = (EE_P [tilde(X)]^top tilde(M) EE_P [tilde(X)])^(-1) EE_P [tilde(X)]^top tilde(M) EE_P [Y]
   $
 
-  - Under #pc("peer contagion"), $bbeta^* = bbeta$ (exact structural parameter) and $btheta^*$ is the misspecified 2SLS target
-  - Under #lc("latent contagion"), $btheta^* = btheta$ (exact structural parameter) and $bbeta^*$ is the misspecified 2SLS target
+  - Under #pc("peer contagion"), $bbeta^* = bbeta$ and $btheta^*$ is the misspecified 2SLS target
+  - Under #lc("latent contagion"), $btheta^* = btheta$ and $bbeta^*$ is the misspecified 2SLS target
 ]
 
 #slide[
   = Asymptotically, $bbeta$ and $btheta$ have the same interpretation
 
-  Even when neither model is correctly specified, $bbeta^*$ and $btheta^*$ are well-defined non-parametric 2SLS projection functionals (Hall & Inoue 2003; Buja et al. 2019).
-
-  #v(1em)
-
   *Theorem:* In sufficiently dense low-rank networks, the population TSLS projection functionals are asymptotically equivalent:
 
-  $
-    norm(
-      underbrace((bar(X)^top M bar(X))^(-1) bar(X)^top M bar(Y), bbeta^* quad pc("(peer target)")) -
-      underbrace((bar(tilde(X))^top tilde(M) bar(tilde(X)))^(-1) bar(tilde(X))^top tilde(M) bar(Y), btheta^* quad lc("(latent target)"))
-    ) = o_p (1 / sqrt(n))
-  $
+  #text(size: 0.7em)[
+    $
+      norm(
+        & underbrace((EE_A [X]^top M EE_A [X])^(-1) EE_A [X]^top M EE_A [Y], bbeta^* quad pc("(peer target)")) - underbrace((EE_P [tilde(X)]^top tilde(M) EE_P [tilde(X)])^(-1) EE_P [tilde(X)]^top tilde(M) EE_P [Y], btheta^* quad lc("(latent target)"))
+      ) = o_p (1 / sqrt(n))
+    $
 
-  #v(0.5em)
-  - If #pc("peer contagion") is true ($bbeta^* = bbeta$), the latent target $btheta^*$ is within $o_p (n^(-1/2))$ of $bbeta$!
-  - If #lc("latent contagion") is true ($btheta^* = btheta$), the peer target $bbeta^*$ is within $o_p (n^(-1/2))$ of $btheta$!
-]
+    #v(0.5em)
+    If #pc("peer contagion") is true ($bbeta^* = bbeta$), the latent target $btheta^*$ is within estimation error of $bbeta$!
 
-#slide[
-  = Real friendship data is sparse. Is it dense enough?
-
-  #text(size: 0.8em)[
-    - Nomination surveys often cap degree by design (Add Health: at most 5 male and 5 female friends), so $d_i <= 10$ no matter how large $n$ is
-    - Then $(G - tilde(G)) Y$ averages at most 10 terms, the law of large numbers has nothing to work with, and the estimator fails #text(size: 0.8em, fill: gray)[(our degree-capped simulation)]
-    - *"Dense enough" is checkable:* look at the estimated expected degrees $hat(d)_i = sum_j hat(P)_(i j)$
-      - they should be large, and grow with $n$ (relative to #text(fill: red)[RATE]), not sit at a fixed cap
-      - capped, bounded-degree networks fall outside our theory; there, expect $hat(theta)$ to be noisy and biased
+    If #lc("latent contagion") is true ($btheta^* = btheta$), the peer target $bbeta^*$ is within estimation error of $btheta$!
   ]
 ]
 
 #new-section[Estimating peer effects from noisy data]
 
 #slide[
-  = The latent contagion estimator handles noisy network data
+  = The latent contagion estimator doesn't need $A$, only $EE(A)$
 
-  $thetahattsls$ only needs $Y, W$ and an estimate $hat(P)$ of $P$
+  Recall $hat(P) = hat(U) hat(S) hat(U)^top$ and $hat(D) = "diag"(hat(P) 1_n)$ and $hat(G) = hat(D)^(-1) hat(P)$.
 
-  Knowing $P_(i j) = lc(bb(E)[A_(i j)])$  is as good as knowing $A$
-
-  Since $P$ is low-rank, just need the principal components of $A$
-
-  Entire matrix completion toolbox!
+  $
+    hat(X) & = [1_n space W space hat(G) Y] \
+    hat(H) & = [1_n space W space hat(G) W space hat(G)^2 W] \
+    hat(M) & = hat(H) (hat(H)^top hat(H))^(-1) hat(H)^top
+  $
+  #lc([Latent contagion]) two-stage least squares estimator
+  $ thetahattsls = (hat(X)^top hat(M) hat(X))^(-1) hat(X)^top hat(M) Y $
+  #align(center, [Only needs $Y, W$ and an estimate $hat(P)$ of low-rank $P$ --  use matrix completion!])
 ]
 
 #slide[
@@ -642,19 +647,16 @@
 
     #v(1em)
 
-    - Who do you go to for advice?
+    - Who are you friends with?
 
-    - Who do you visit?
-
-    - Who lends kerosene or rice to you?
+    - Who do you talk to often?
   ][
     How many people do you know who...
 
-    - gave birth to twins?
+    - study statistics?
 
-    - completed a college degree?
+    - live in Portland?
 
-    - own a tractor?
   ]
 ]
 
@@ -789,22 +791,30 @@
 
 ]
 
-
 #slide[
-  = Anxiety before final exams amongst MBA students
+  = Anxiety before final exams: specification matters
 
-  #toolbox.side-by-side(columns: (0.4fr, 0.6fr), gutter: 1em)[
-    #text(size: 0.75em)[
-      Do anxious students make their friends anxious?
+  #toolbox.side-by-side(columns: (0.47fr, 0.53fr), gutter: 1em)[
+    #text(size: 0.7em)[
+      Data on 241 MBA students from "Do Your Friends Stress You out? A Field Study of the Spread of Stress..." by Shihan et al (2023)
 
-      241 MBA students (Shihan et al 2023): anxiety before final exams on friends' anxiety, controlling for personality and demographics
+      #v(1em)
+      #align(center)[
+        $
+          "anxiety" & ~ "personality + demographics + U +" \
+                    & quad lc("latent peer anxiety") \
+          "anxiety" & ~ "personality + demographics + U +" \
+                    & quad pc("peer anxiety")
+        $
+      ]
+      #v(1em)
 
-      #v(0.5em)
-      Latent contagion TSLS estimates (#lc[red]) agree with peer contagion TSLS estimates (#pc[orange]) once the embedding dimension is large enough, even though the latent model never sees the observed friendships directly
+      $U$ accounts for localized/group effects. Dimension of $U$ is unknown!
     ]
   ][
-    #align(center + horizon, image("figures/anxiety/estimates-tsls.png", width: 100%))
+    #align(center + horizon, image("figures/anxiety/estimates.png", width: 100%))
   ]
+  #align(center, [*Model specification dramatically impacts inference*])
 ]
 
 #slide[
@@ -863,7 +873,7 @@
   ))
 
   #v(0.5em)
-  #align(center, text(size: 1.6em)[$"Col"(G T) prop 1_n quad ==> quad$ peer covariates collapse to the intercept!])
+  #align(center, [$"Col"(G T) prop 1_n quad ==> quad$ peer covariates collapse to the intercept!])
 
   /* Previous 4x4 matrix arithmetic:
   #align(center, text(size: 0.8em)[
@@ -1033,7 +1043,7 @@
         [#box(image("figures/icons/envelope.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
             "mailto:alex.hayes@oregonstate.edu",
           )[alex.hayes\@oregonstate.edu]],
-        [#box(image("figures/icons/wordpress.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
+        [#box(image("figures/icons/globe-solid-full.svg", height: 1em, fit: "contain"), baseline: 5pt) #h(0.5em) #link(
             "https://www.alexpghayes.com",
           )[alexpghayes.com]],
       )
@@ -1099,57 +1109,6 @@
   = Estimator
 
   `ivreg(y ~ Gy + W | W + GW + G^2W)`, with instruments $1_n$, $W$, $G W$, $G^2 W$
-]
-
-#slide[
-  = Anxiety before final exams: specification matters
-
-  #toolbox.side-by-side(columns: (0.47fr, 0.53fr), gutter: 1em)[
-    #text(size: 0.7em)[
-      Data on 241 MBA students from "Do Your Friends Stress You out? A Field Study of the Spread of Stress..." by Shihan et al (2023)
-
-      #v(1em)
-      #align(center)[
-        $
-          "anxiety" & ~ "personality + demographics + U +" \
-                    & quad lc("latent peer anxiety") \
-          "anxiety" & ~ "personality + demographics + U +" \
-                    & quad pc("peer anxiety")
-        $
-      ]
-      #v(1em)
-
-      $U$ accounts for localized/group effects. Dimension of $U$ is unknown!
-    ]
-  ][
-    #align(center + horizon, image("figures/anxiety/estimates.png", width: 100%))
-  ]
-  #align(center, [*Model specification dramatically impacts inference*])
-]
-
-#slide[
-  = Backup: choosing the rank $r$ #text(size: 0.5em, fill: red)[STUB]
-
-  #text(size: 0.85em)[
-    - $hat(P) = hat(U) hat(S) hat(U)^top$ depends on the rank $r$, the number of principal components kept
-    - Common approaches: look for an elbow or gap in the singular values of $A$ (scree plot), universal singular value thresholding, or cross-validation by holding out entries of $A$
-    - Too small $r$: bias, since $hat(P)$ misses structure. Too large $r$: variance, since $hat(P)$ fits noise
-    - The anxiety application varies $r$ directly (embedding dimension on the x-axis)
-
-    #text(fill: red)[TODO: state which rule we recommend and what the theory requires of $r$]
-  ]
-]
-
-#slide[
-  = Backup: negative entries in $hat(P)$
-
-  #text(size: 0.85em)[
-    - $hat(P) = hat(U) hat(S) hat(U)^top$ is a low-rank approximation of $A$, not a probability model, so nothing forces $hat(P)_(i j) in [0, 1]$
-    - Negative entries show up where $P_(i j)$ is near zero and the estimation error pushes below it
-    - This is fine for our purposes: we only need $hat(P)$ to be close to $P$ entrywise, and the theory allows weighted edges with $bb(E)[A_(i j)]$ in place of probabilities
-    - It matters only through $hat(G) = hat(D)^(-1) hat(P)$: negative weights mean a vertex's "average over friends" is not a convex combination, and $hat(d)_i$ near zero would make row-normalization unstable (another reason to want large degrees)
-    - Clipping $hat(P)$ at zero is a possible fix, but we do not need it for the theory #text(fill: red)[(check: is this what the code does?)]
-  ]
 ]
 
 #slide[
