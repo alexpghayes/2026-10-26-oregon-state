@@ -330,4 +330,11 @@ plot_anxiety_estimates <- function(estimates, palette) {
     )
 
   save_deck_plot(plot, "figures/anxiety/estimates.png", width = 10, height = 9 * 9 / 16, dpi = 300)
+
+  # single panel for the main talk: TSLS only, not adjusting for X
+  plot_tsls <- plot %+%
+    filter(plot$data, estimator == "tsls", !homophily) +
+    facet_null()
+
+  save_deck_plot(plot_tsls, "figures/anxiety/estimates-tsls.png", width = 8, height = 8 * 9 / 16, dpi = 300)
 }

@@ -126,21 +126,25 @@ make_concentration_figure <- function(palette) {
     theme_deck(palette, base_size = 22, void = TRUE) +
     theme(
       legend.position = "none",
-      strip.text.y = element_text(angle = -90)
+      strip.text.y.left = element_text(angle = 90, size = 30)
     ) +
     facet_grid(
       rows = vars(matrix),
       cols = vars(dgp),
+      switch = "y",
       labeller = labeller(
         dgp = c(
           true = "Exact network",
           noisy = "Noisy network",
           missing = "Partial network"
         ),
-        matrix = c(
-          observed = "Observed data",
-          population = "Population structure",
-          estimate = "Estimated structure"
+        matrix = as_labeller(
+          c(
+            observed = "Observed~A",
+            population = "True~P",
+            estimate = "Estimated~hat(P)"
+          ),
+          default = label_parsed
         )
       )
     )
