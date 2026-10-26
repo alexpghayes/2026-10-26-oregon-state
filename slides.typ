@@ -562,7 +562,7 @@
 #slide[
   = The latent contagion estimator doesn't need $A$, only $EE(A)$
 
-  Recall $hat(P) = hat(U) hat(S) hat(U)^top$ and $hat(D) = "diag"(hat(P) 1_n)$ and $hat(G) = hat(D)^(-1) hat(P)$.
+  Recall $hat(P) = hat(U) hat(S) hat(U)^top$ estimates $EE[A]$ and $hat(D) = "diag"(hat(P) 1_n)$ and $hat(G) = hat(D)^(-1) hat(P)$.
 
   $
     hat(X) & = [1_n space W space hat(G) Y] \
@@ -791,7 +791,7 @@
 
   #takeaway(
     "Identification",
-  )[It's often hard hard to distinguish between contagion and localized outcomes in a social network @hayes2026a @shalizi2011 ]
+  )[It's often hard to distinguish between contagion and localized outcomes in a social network @hayes2026a @shalizi2011 ]
 ]
 
 
