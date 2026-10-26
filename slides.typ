@@ -426,7 +426,7 @@
 ]
 
 #slide[
-  = Is the #lc([latent contagion]) model a good working model?
+  = Is the latent contagion model a good working model?
 
   #text(size: 0.85em)[
     $
@@ -509,45 +509,17 @@
 ]
 
 #slide[
-  = Practical limitations of the latent contagion model
-
-  #takeaway(
-    "Density",
-  )[Our theory requires moderately dense networks but most real world social networks are sparse]
-
-  #takeaway(
-    "Identification",
-  )[It's often hard hard to distinguish between contagion and localized outcomes in a social network @hayes2026a @shalizi2011 ]
-
-]
-
-#slide[
-  = Asymptotically, $bbeta$ and $btheta$ have the same interpretation
-
-  Let $tilde(d)_i = sum_j P_(i j)$ and $tilde(D) = "diag"(tilde(d)_1, ..., tilde(d)_n)$ and $tilde(G) = tilde(D)^(-1) P in R^(n times n).$
-
-  Population design matrices:
-
-  $
-                  X = [1_n space W space G Y] quad quad quad quad quad quad quad & pc(pc("peer contagion")) \
-    tilde(X) = [1_n space W space tilde(G) Y] quad quad quad quad quad quad quad & lc(lc("latent contagion"))
-  $
-
-  *Theorem:* Under both peer and latent contagion models, in dense low-rank networks, the non-parametric projection functionals are very close
-
-  $
-    norm(EE[X^top X]^(-1) EE[X^top Y] - EE[tilde(X)^top tilde(X)]^(-1) EE[tilde(X)^top Y]) = o_p (1/sqrt(n))
-  $
-]
-
-#slide[
   = What do $bbeta$ and $btheta$ mean when models are misspecified?
 
-  Let $tilde(G) = tilde(D)^(-1) P$ where $tilde(D) = "diag"(tilde(d)_1, ..., tilde(d)_n)$. Write $EE_A [dot] = EE[dot | A, W]$ and $EE_P [dot] = EE[dot | P, W]$. Then
+  Let $tilde(G) = tilde(D)^(-1) P$ where $tilde(D) = "diag"(tilde(d)_1, ..., tilde(d)_n)$.
+
+  Write $ EE_A [dot] & = EE[dot | A, W] \
+  EE_P [dot] & = EE[dot | P, W] $
+  Then:
 
   $
-    EE_A [X] = [1_n space W space G EE_A [Y]], & quad M = H (H^top H)^(-1) H^top & quad pc("peer contagion") \
-    EE_P [tilde(X)] = [1_n space W space tilde(G) EE_P [Y]], & quad tilde(M) = tilde(H) (tilde(H)^top tilde(H))^(-1) tilde(H)^top & quad lc("latent contagion")
+    EE_A [X] = EE_A [1_n space W space G Y], & quad M = H (H^top H)^(-1) H^top & quad pc("peer contagion") \
+    EE_P [tilde(X)] = EE_P [1_n space W space tilde(G) Y], & quad tilde(M) = tilde(H) (tilde(H)^top tilde(H))^(-1) tilde(H)^top & quad lc("latent contagion")
   $
 ]
 
@@ -569,11 +541,12 @@
 
   *Theorem:* In sufficiently dense low-rank networks, the population TSLS projection functionals are asymptotically equivalent:
 
-  #text(size: 0.7em)[
+  #text(size: 0.8em)[
     $
-      norm(
-        & underbrace((EE_A [X]^top M EE_A [X])^(-1) EE_A [X]^top M EE_A [Y], bbeta^* quad pc("(peer target)")) - underbrace((EE_P [tilde(X)]^top tilde(M) EE_P [tilde(X)])^(-1) EE_P [tilde(X)]^top tilde(M) EE_P [Y], btheta^* quad lc("(latent target)"))
-      ) = o_p (1 / sqrt(n))
+      & norm(
+          underbrace((EE_A [X]^top M EE_A [X])^(-1) EE_A [X]^top M EE_A [Y], bbeta^* quad pc("(peer target)")) - underbrace((EE_P [tilde(X)]^top tilde(M) EE_P [tilde(X)])^(-1) EE_P [tilde(X)]^top tilde(M) EE_P [Y], btheta^* quad lc("(latent target)"))
+        ) \
+      & wide = o_p (1 / sqrt(n))
     $
 
     #v(0.5em)
@@ -582,6 +555,7 @@
     If #lc("latent contagion") is true ($btheta^* = btheta$), the peer target $bbeta^*$ is within estimation error of $btheta$!
   ]
 ]
+
 
 #new-section[Estimating peer effects from noisy data]
 
@@ -792,11 +766,41 @@
 ]
 
 #slide[
+  #text(size: 0.8em)[
+    #takeaway(
+      "Takeaway 1",
+    )[Peer effects can be estimated without observing the network exactly: use estimated friendship probabilities as the "network."]
+
+    #v(0.5em)
+    #takeaway(
+      "Takeaway 2",
+    )[We can use the entire toolbox of matrix completion techniques to handle network noise in low-rank networks.]
+
+
+    #v(0.5em)
+    #align(center, [Does plugging in $hat(EE)[A]$ in for $A$ work as a general technique to handle noise in networks?])
+  ]
+]
+
+#slide[
+  = Practical limitations of the latent contagion model
+
+  #takeaway(
+    "Density",
+  )[Our theory requires moderately dense networks but most real world social networks are sparse]
+
+  #takeaway(
+    "Identification",
+  )[It's often hard hard to distinguish between contagion and localized outcomes in a social network @hayes2026a @shalizi2011 ]
+]
+
+
+#slide[
   = Anxiety before final exams: specification matters
 
   #toolbox.side-by-side(columns: (0.47fr, 0.53fr), gutter: 1em)[
     #text(size: 0.7em)[
-      Data on 241 MBA students from "Do Your Friends Stress You out? A Field Study of the Spread of Stress..." by Shihan et al (2023)
+      Data on 241 MBA students from "Do Your Friends Stress You out? A Field Study of the Spread of Stress..." by #cite(<li2023d>, form: "prose")
 
       #v(1em)
       #align(center)[
@@ -815,23 +819,6 @@
     #align(center + horizon, image("figures/anxiety/estimates.png", width: 100%))
   ]
   #align(center, [*Model specification dramatically impacts inference*])
-]
-
-#slide[
-  #text(size: 0.8em)[
-    #takeaway(
-      "Takeaway 1",
-    )[Peer effects can be estimated without observing the network exactly: use estimated friendship probabilities as the "network."]
-
-    #v(0.5em)
-    #takeaway(
-      "Takeaway 2",
-    )[We can use the entire toolbox of matrix completion techniques to handle network noise in low-rank networks.]
-
-
-    #v(0.5em)
-    #align(center, [Does plugging in $hat(EE)[A]$ in for $A$ work as a general technique to handle noise in networks?])
-  ]
 ]
 
 #new-section[Shameless self-promotion]
