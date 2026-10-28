@@ -1,18 +1,4 @@
-# Spectral Estimation and Trait Selection for Aggregated Relational Data
-with Arun Chandrasekhar, Tyler McCormick, and Emily Breza
+# Estimating peer effects in noisy, low-rank networks via network smoothing
+Joint with Keith Levin (UW-Madison)
 
-Collecting network data is expensive and complex, yet many economic questions concern dynamics between socially connected individuals. Aggregated Relational Data (ARD) offers a cheap alternative: rather than asking about all pairwise connections, ARD surveys ask each individual "How many people with trait X do you know?" Despite initial promise, two major barriers have limited ARD adoption: (1) there has been limited understanding about which traits to actually survey, and (2) current approaches to analyzing ARD focus on estimating parameters of network models, rather than performing downstream economic analysis.
-
-We develop a unified framework for estimation and inference with ARD that addresses both challenges. Under the random dot product graph model, we prove that ARD can identify and estimate network parameters. We characterize how estimation error depends on trait selection, providing practical survey design guidance and relaxing requirements (such as exclusivity) of previous methods. We provide rigorous theoretical justification for using ARD parameter estimates for economic inference, and demonstrate the utility of our framework by estimating spillover effects in networks using only ARD data. Beyond our theoretical results, our estimator is simple, can be implemented in a dozen lines of code, and runs thousands of times faster than existing methods.
-
-## Figures
-
-Figures drawn in R are produced by a [targets](https://docs.ropensci.org/targets/) pipeline:
-
-```r
-targets::tar_make()   # writes figures/ (blockmodel-poster.png, all_matrices.png, missing-edges.pdf, time-varying.png, anxiety/estimates.pdf)
-```
-
-- `R/theme.R` reads the colors out of `theme.typ` and sets text in the deck font (Charter), so editing the Typst theme and re-running `tar_make()` restyles every figure.
-- `data/li2023/` is the cleaned anxiety data; `data-raw/li2023/` holds the raw replication data and `clean.R` that produced it.
-- Figures not listed above (`figures/simulations/`, `figures/matrices/`, `assortative.png`, ...) were made elsewhere and are checked in as-is.
+Peer effect estimation requires precise network measurement, yet most empirical networks are noisy, rendering standard estimators inconsistent. To address measurement error in networks, we propose a method to estimate peer effects in networks whose expected adjacency matrix is low-rank. Our key result shows that peer effects over a true unobserved network are asymptotically equivalent to peer effects over the expected adjacency matrix. This result reduces peer effect estimation in noisy networks to low-rank matrix estimation targeting the expected adjacency matrix. We develop our theory for weighted networks observed with additive noise, but simulations suggest approach can be applied more generally when there is a low-rank estimation method suited to a particular noise structure. We demonstrate via simulations that our approach applies to egocentric samples, aggregated relational data, and networks with missing edges, each requiring a different low-rank estimation method.
